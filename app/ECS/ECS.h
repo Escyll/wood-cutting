@@ -6,21 +6,19 @@
 #include <unordered_map>
 #include <typeindex>
 #include <memory>
+#include <unordered_set>
 
 using Entity = uint32_t;
 static inline Entity MaxEntities = 1'000'000;
 
-struct ComponentStorageBase
-{
-
-};
+struct ComponentStorageBase {};
 
 template<typename T>
 struct ComponentStorage : ComponentStorageBase
 {
     std::vector<T> dense;
     std::vector<Entity> denseIndex{MaxEntities};
-    std::vector<Entity> entities;
+    std::unordered_set<Entity> m_entities;
 
     bool contains(Entity entity)
     {
@@ -29,7 +27,7 @@ struct ComponentStorage : ComponentStorageBase
 
     T& insert(Entity entity, const T& component)
     {
-        entities.push_back(entity);
+        m_entities.insert(entity);
         auto index = dense.size();
         dense.push_back(component);
         denseIndex[entity] = index;
@@ -52,7 +50,11 @@ struct ComponentStorage : ComponentStorageBase
     {
         auto index = denseIndex[entity];
         return dense[index];
+    }
 
+    const std::unordered_set<Entity>& entities() const
+    {
+        return m_entities;
     }
 };
 
@@ -89,6 +91,26 @@ public:
     {
         return getStorage<T>().get(entity);
     }
+
+    template<typename Component>
+    std::unordered_set<Entity> all()
+    {
+       return getStorage<Component>().entities();
+    }
+
+    template<typename Component, typename... OtherComponents> requires (sizeof...(OtherComponents) >= 1)
+    std::unordered_set<Entity> all()
+    {
+        auto otherEntities = all<OtherComponents...>();
+        auto entities = all<Component>();
+        for (auto entity : otherEntities)
+        {
+            entities.insert(entity);
+        }
+        return entities;
+    }
+        
+
 private:
     std::unordered_map<std::type_index, ComponentStorageBase*> m_storage;
 };
