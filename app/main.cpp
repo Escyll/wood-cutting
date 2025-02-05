@@ -25,6 +25,7 @@ int main (int argc, char *argv[])
     
     Registry registry;
     RenderSystem renderSystem;
+    renderSystem.shaderID = shaderProgram;
     WoodCuttingSystem woodCuttingSystem;
 
     Entity worker = registry.create();
@@ -32,25 +33,31 @@ int main (int argc, char *argv[])
     using Color = glm::vec4;
     using Pos = glm::vec2;
 
-    registry.insert<Pos>(worker, Pos{-0.0, 0.0});
+    registry.insert<Pos>(worker, Pos{-0.4, 0.0});
+    registry.insert<Patrol>(worker, Patrol{-0.5f, 0.5f, .5f, 1});
     registry.insert<Color>(worker, Color{ 0.2, 1.0, 0.2, 1.0 });
     registry.insert<RenderData>(worker, {VAO, circleVBO.vertexCount, GL_TRIANGLE_FAN});
 
-    registry.insert<Pos>(worker2, Pos{-0.0, 0.0});
-    registry.insert<Color>(worker2, Color{ 0.2, 1.0, 0.2, 1.0 });
+    registry.insert<Pos>(worker2, Pos{0.2, 0.3});
+    registry.insert<Patrol>(worker2, Patrol{-0.5f, 0.5f, .5f, -1});
+    registry.insert<Color>(worker2, Color{ 0.4, 0.4, 1.0, 1.0 });
 
     std::cout << "Entities: ";
-    auto allEntities = registry.all<Pos, Color>();
+    auto allEntities = registry.getEntities<Pos, Color>();
     for (auto entity : allEntities)
     {
         std::cout << entity;
     }
     std::cout << std::endl;
 
+    for (auto [entity, pos, col] : registry.each<Pos, Color>())
+    {
+        std::cout << "Entity: " << entity << std::endl;
+        std::cout << "Pos: " << pos.x << ", " << pos.y << std::endl;
+        std::cout << "Col: " << col.r << ", " << col.g << ", " << col.b << std::endl;
+    }
 
-    renderSystem.worker = worker;
-    renderSystem.shaderID = shaderProgram;
-    woodCuttingSystem.worker = worker;
+    glfwSwapInterval(1);
 
     auto previousFrame = 0.f;
     while(!glfwWindowShouldClose(window))

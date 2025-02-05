@@ -9,40 +9,46 @@ struct RenderSystem
 {
     void run(Registry& registry, float deltaTime)
     {
-        auto& position = registry.get<glm::vec2>(worker);
-        auto& renderData = registry.get<RenderData>(worker);
-        auto& color = registry.get<glm::vec4>(worker);
-        auto trans = glm::translate(glm::mat4(1.0f), glm::vec3(position.x, position.y, 0.f));
-        setUniform(shaderID, "transform", trans);
-        setUniform(shaderID, "color", color);
-        render(renderData);
+        for (auto [entity, position, renderData, color] : registry.each<glm::vec2, RenderData, glm::vec4>())
+        {
+            auto trans = glm::translate(glm::mat4(1.0f), glm::vec3(position.x, position.y, 0.f));
+            setUniform(shaderID, "transform", trans);
+            setUniform(shaderID, "color", color);
+            render(renderData);
+        }
     }
-    Entity worker;
     int shaderID;
+};
+
+struct Patrol
+{
+    float from;
+    float to;
+    float speed;
+    int direction;
 };
 
 struct WoodCuttingSystem
 {
     void run(Registry& registry, float deltaTime)
     {
-        auto& position = registry.get<glm::vec2>(worker);
-        position.x += direction*deltaTime*0.5f;
-
-        if (position.x > 0.5f)
+        for (auto [entity, position, patrol] : registry.each<glm::vec2, Patrol>())
         {
-            direction *= -1.f;
-            position.x = 0.5f - (position.x - 0.5f);
-        }
+            position.x += patrol.speed*patrol.direction*deltaTime;
 
-        if (position.x < -0.5f)
-        {
-            direction *= -1.f;
-            position.x = -0.5f + (position.x + 0.5f);
+            if (position.x > patrol.to)
+            {
+                patrol.direction = -patrol.direction;
+                position.x = patrol.to - (position.x - patrol.to);
+            }
+
+            if (position.x < patrol.from)
+            {
+                patrol.direction = -patrol.direction;
+                position.x = -patrol.from + (position.x + patrol.from);
+            }
         }
     }
-
-    float direction = 1.f;
-    Entity worker;
 };
 
 #endif

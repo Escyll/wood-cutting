@@ -7,6 +7,8 @@
 #include <typeindex>
 #include <memory>
 #include <unordered_set>
+#include <tuple>
+#include <functional>
 
 using Entity = uint32_t;
 static inline Entity MaxEntities = 1'000'000;
@@ -56,6 +58,16 @@ struct ComponentStorage : ComponentStorageBase
     {
         return m_entities;
     }
+
+    std::vector<T*> get(const std::unordered_set<Entity>& entities) const
+    {
+        std::vector<T*> result;
+        for (auto entity : entities)
+        {
+            result.push_back(dense[denseIndex[entity]]);
+        }
+        return result;
+    }
 };
 
 class Registry
@@ -92,24 +104,35 @@ public:
         return getStorage<T>().get(entity);
     }
 
-    template<typename Component>
-    std::unordered_set<Entity> all()
+    template<typename... Components> requires (sizeof...(Components) == 0)
+    std::unordered_set<Entity> getEntities()
     {
-       return getStorage<Component>().entities();
+       return {};
     }
 
-    template<typename Component, typename... OtherComponents> requires (sizeof...(OtherComponents) >= 1)
-    std::unordered_set<Entity> all()
+    template<typename Component, typename... OtherComponents>
+    std::unordered_set<Entity> getEntities()
     {
-        auto otherEntities = all<OtherComponents...>();
-        auto entities = all<Component>();
+        auto otherEntities = getEntities<OtherComponents...>();
+        auto entities = getStorage<Component>().entities();
         for (auto entity : otherEntities)
         {
             entities.insert(entity);
         }
         return entities;
     }
-        
+
+    template<typename... Components>
+    auto each()
+    {
+        auto entities = getEntities<Components...>();
+        std::vector<decltype(std::make_tuple(*entities.begin(), std::ref(getStorage<Components>().get(*entities.begin()))...))> result;
+        for (auto entity : entities)
+        {
+            result.push_back(std::make_tuple(entity, std::ref(getStorage<Components>().get(entity))...));
+        }
+        return result;
+    }
 
 private:
     std::unordered_map<std::type_index, ComponentStorageBase*> m_storage;
