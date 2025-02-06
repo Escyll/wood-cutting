@@ -1,13 +1,13 @@
 #ifndef ECS_SYSTEMS_SYSTEMS_H
 #define ECS_SYSTEMS_SYSTEMS_H
 
-//TODO: Move ECS and Renderer to library, keep Systems in app
+// TODO: Move ECS and Renderer to library, keep Systems in app
 #include "ECS/ECS.h"
 #include "Renderer/Renderer.h"
 
 struct RenderSystem
 {
-    void run(Registry& registry, float deltaTime)
+    void run(Registry &registry, float deltaTime)
     {
         for (auto [entity, position, renderData, color] : registry.each<glm::vec2, RenderData, glm::vec4>())
         {
@@ -30,21 +30,21 @@ struct Patrol
 
 struct WoodCuttingSystem
 {
-    void run(Registry& registry, float deltaTime)
+    void run(Registry &registry, float deltaTime)
     {
         for (auto [entity, position, patrol] : registry.each<glm::vec2, Patrol>())
         {
-            position.x += patrol.speed*patrol.direction*deltaTime;
+            position.x += patrol.speed * patrol.direction * deltaTime;
 
             if (position.x > patrol.to)
             {
-                patrol.direction = -patrol.direction;
+                patrol.direction = -1;
                 position.x = patrol.to - (position.x - patrol.to);
             }
 
             if (position.x < patrol.from)
             {
-                patrol.direction = -patrol.direction;
+                patrol.direction = 1;
                 position.x = -patrol.from + (position.x + patrol.from);
             }
         }

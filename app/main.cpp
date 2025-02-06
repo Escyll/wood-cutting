@@ -12,17 +12,17 @@
 #include "Renderer/Shaders.h"
 #include "Geometry.h"
 
-int main (int argc, char *argv[])
+int main(int argc, char *argv[])
 {
     auto window = initializeOpenGLAndCreateWindow();
     if (not window)
         return -1;
 
     auto shaderProgram = createShaderProgram(vertexShaderSource, fragmentShaderSource);
-     
+
     VBOData circleVBO = bufferData(createCircleVertices(0.02f, 20));
     auto VAO = createPosVAO(circleVBO.VBO);
-    
+
     Registry registry;
     RenderSystem renderSystem;
     renderSystem.shaderID = shaderProgram;
@@ -35,12 +35,13 @@ int main (int argc, char *argv[])
 
     registry.insert<Pos>(worker, Pos{-0.4, 0.0});
     registry.insert<Patrol>(worker, Patrol{-0.5f, 0.5f, .5f, 1});
-    registry.insert<Color>(worker, Color{ 0.2, 1.0, 0.2, 1.0 });
+    registry.insert<Color>(worker, Color{0.2, 1.0, 0.2, 1.0});
     registry.insert<RenderData>(worker, {VAO, circleVBO.vertexCount, GL_TRIANGLE_FAN});
 
     registry.insert<Pos>(worker2, Pos{0.2, 0.3});
     registry.insert<Patrol>(worker2, Patrol{-0.5f, 0.5f, .5f, -1});
-    registry.insert<Color>(worker2, Color{ 0.4, 0.4, 1.0, 1.0 });
+    registry.insert<Color>(worker2, Color{0.4, 0.4, 1.0, 1.0});
+    registry.insert<RenderData>(worker2, {VAO, circleVBO.vertexCount, GL_TRIANGLE_FAN});
 
     std::cout << "Entities: ";
     auto allEntities = registry.getEntities<Pos, Color>();
@@ -60,7 +61,7 @@ int main (int argc, char *argv[])
     glfwSwapInterval(1);
 
     auto previousFrame = 0.f;
-    while(!glfwWindowShouldClose(window))
+    while (!glfwWindowShouldClose(window))
     {
         auto currentFrame = glfwGetTime();
         auto timeDelta = currentFrame - previousFrame;
