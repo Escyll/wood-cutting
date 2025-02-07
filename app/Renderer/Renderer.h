@@ -1,16 +1,23 @@
 #ifndef RENDERER_RENDERER_H
 #define RENDERER_RENDERER_H
 
+enum class DrawStrategy
+{
+    ARRAYS,
+    ELEMENTS
+};
+
 struct RenderData
 {
     unsigned int VAO = 0;
-    size_t vertexCount = 0;
+    size_t elementCount = 0;
     int drawMode = GL_TRIANGLES;
+    DrawStrategy drawStrategy = DrawStrategy::ARRAYS;
 };
 
-struct VBOData {
-    unsigned int VBO = 0;
-    size_t vertexCount = 0;
+struct BufferData {
+    unsigned int handle = 0;
+    size_t elementCount = 0;
 };
 
 unsigned int getLoc(unsigned int shader, const std::string& name)
@@ -31,10 +38,17 @@ void setUniform(unsigned int shader, const std::string& name, const glm::mat4& m
 void render(const RenderData& renderData)
 {
     glBindVertexArray(renderData.VAO);
-    glDrawArrays(renderData.drawMode, 0, renderData.vertexCount);
+    if (renderData.drawStrategy == DrawStrategy::ELEMENTS)
+    {
+        glDrawElements(renderData.drawMode, renderData.elementCount, GL_UNSIGNED_INT, nullptr);
+    }
+    else
+    {
+        glDrawArrays(renderData.drawMode, 0, renderData.elementCount);
+    }
 }
 
-[[nodiscard]] VBOData bufferData(const std::vector<glm::vec2>& data) 
+[[nodiscard]] BufferData bufferData(const std::vector<glm::vec2>& data) 
 {
     unsigned int vbo;
     glGenBuffers(1, &vbo);
@@ -44,7 +58,17 @@ void render(const RenderData& renderData)
     return {vbo, data.size()};
 }
 
-[[nodiscard]] unsigned int createPosVAO(unsigned int posVBO)
+[[nodiscard]] BufferData bufferIndexData(const std::vector<unsigned int>& data)
+{
+    unsigned int ebo;
+    glGenBuffers(1, &ebo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, data.size() * sizeof(unsigned int), &data[0], GL_STATIC_DRAW);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    return {ebo, data.size()};
+}
+
+[[nodiscard]] unsigned int createPosVAO(unsigned int posVBO, unsigned int ebo = 0)
 {
     unsigned int VAO;
     glGenVertexArrays(1, &VAO);
@@ -52,6 +76,10 @@ void render(const RenderData& renderData)
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
     glVertexArrayVertexBuffer(VAO, 0, posVBO, 0, 2 * sizeof(float));
     glEnableVertexAttribArray(0);
+    if (ebo > 0)
+    {
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+    }
     glBindVertexArray(0);
     return VAO;
 }
@@ -89,6 +117,11 @@ void processInput(GLFWwindow* window)
     {
         glfwSetWindowShouldClose(window, true);
     }
+}
+
+bool isKeyPressed(GLFWwindow* window, int key)
+{
+    return glfwGetKey(window, key) == GLFW_PRESS;
 }
 
 [[nodiscard]] GLFWwindow* initializeOpenGLAndCreateWindow()
