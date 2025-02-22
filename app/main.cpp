@@ -1,6 +1,5 @@
-#include <iostream>
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
+//#include <glad/glad.h>
+//#include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -14,6 +13,7 @@
 
 int main(int argc, char *argv[])
 {
+    Registry registry;
     auto window = initializeOpenGLAndCreateWindow();
     if (not window)
         return -1;
@@ -25,12 +25,10 @@ int main(int argc, char *argv[])
     BufferData barBuffer = bufferData(createRectangleVertices(0.01f, 0.2f));
     BufferData rectangleIndexBuffer = bufferIndexData({0,1,2,2,3,0});
 
-
     auto circleVAO = createPosVAO(circleBuffer.handle);
     auto lumberMillVAO = createPosVAO(lumberMillBuffer.handle, rectangleIndexBuffer.handle);
     auto barVAO = createPosVAO(barBuffer.handle, rectangleIndexBuffer.handle);
 
-    Registry registry;
     RenderSystem renderSystem;
     renderSystem.shaderID = shaderProgram;
     WoodCuttingSystem woodCuttingSystem;
@@ -54,19 +52,19 @@ int main(int argc, char *argv[])
     using Color = glm::vec4;
     using Pos = glm::vec2;
 
-    //registry.insert<Pos>(worker, Pos{-0.4, 0.0});
-    //registry.insert<Patrol>(worker, Patrol{-0.5f, 0.5f, .5f, 1});
-    //registry.insert<Color>(worker, Color{0.2, 1.0, 0.2, 1.0});
-    //registry.insert<RenderData>(worker, {circleVAO, circleBuffer.elementCount, GL_TRIANGLE_FAN});
+    registry.insert<Pos>(worker, Pos{-0.4, 0.0});
+    registry.insert<Patrol>(worker, Patrol{-0.5f, 0.5f, .5f, 1});
+    registry.insert<Color>(worker, Color{0.2, 1.0, 0.2, 1.0});
+    registry.insert<RenderData>(worker, {circleVAO, circleBuffer.elementCount, GL_TRIANGLE_FAN});
 
-    //registry.insert<Pos>(worker2, Pos{0.2, 0.3});
-    //registry.insert<Patrol>(worker2, Patrol{-0.5f, 0.5f, .5f, -1});
-    //registry.insert<Color>(worker2, Color{0.4, 0.4, 1.0, 1.0});
-    //registry.insert<RenderData>(worker2, {circleVAO, circleBuffer.elementCount, GL_TRIANGLE_FAN});
+    registry.insert<Pos>(worker2, Pos{0.2, 0.3});
+    registry.insert<Patrol>(worker2, Patrol{-0.5f, 0.5f, .5f, -1});
+    registry.insert<Color>(worker2, Color{0.4, 0.4, 1.0, 1.0});
+    registry.insert<RenderData>(worker2, {circleVAO, circleBuffer.elementCount, GL_TRIANGLE_FAN});
 
-    //registry.insert<Pos>(lumberMill, Pos{0.0, -0.8});
-    //registry.insert<Color>(lumberMill, Color{0.6, 0.2, 0.2, 1.0});
-    //registry.insert<RenderData>(lumberMill, {lumberMillVAO, rectangleIndexBuffer.elementCount, GL_TRIANGLES, DrawStrategy::ELEMENTS});
+    registry.insert<Pos>(lumberMill, Pos{0.0, -0.8});
+    registry.insert<Color>(lumberMill, Color{0.6, 0.2, 0.2, 1.0});
+    registry.insert<RenderData>(lumberMill, {lumberMillVAO, rectangleIndexBuffer.elementCount, GL_TRIANGLES, DrawStrategy::ELEMENTS});
 
     registry.insert<Pos>(ball, Pos{-0.8, 0.0});
     registry.insert<Direction>(ball, Direction(1.0, 0.5));
@@ -86,6 +84,7 @@ int main(int argc, char *argv[])
     auto previousFrame = 0.f;
     while (!glfwWindowShouldClose(window))
     {
+        glfwPollEvents();
         auto currentFrame = glfwGetTime();
         auto timeDelta = currentFrame - previousFrame;
         previousFrame = currentFrame;
@@ -101,9 +100,8 @@ int main(int argc, char *argv[])
         pongCollisionSystem.run(registry, timeDelta);
 
         glfwSwapBuffers(window);
-        glfwPollEvents();
     }
-
+    glfwDestroyWindow(window);
     glfwTerminate();
     return 0;
 }

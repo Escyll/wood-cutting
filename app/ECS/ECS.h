@@ -5,7 +5,7 @@
 #include <vector>
 #include <unordered_map>
 #include <typeindex>
-#include <memory>
+#include <glm/glm.hpp>
 #include <unordered_set>
 #include <tuple>
 #include <functional>
@@ -21,8 +21,13 @@ template <typename T>
 struct ComponentStorage : ComponentStorageBase
 {
     std::vector<T> dense;
-    std::vector<Entity> denseIndex{MaxEntities};
+    std::vector<Entity> denseIndex;
     std::unordered_set<Entity> m_entities;
+
+    ComponentStorage()
+    {
+        denseIndex.resize(MaxEntities);
+    }
 
     bool contains(Entity entity)
     {
@@ -35,7 +40,7 @@ struct ComponentStorage : ComponentStorageBase
         auto index = dense.size();
         dense.push_back(component);
         denseIndex[entity] = index;
-        return dense[index];
+        return dense.at(index);
     }
 
     T &replace(Entity entity, const T &component)
@@ -75,41 +80,47 @@ struct ComponentStorage : ComponentStorageBase
 class Registry
 {
 public:
-    Entity create() const;
+    Entity create();
+    ~Registry() {
+        for (auto comp : m_storage)
+        {
+            delete comp.second;
+        }
+    }
 
     template <typename T>
-    ComponentStorage<T> &getStorage()
+    ComponentStorage<T>* getStorage()
     {
         if (not m_storage.contains(typeid(T)))
             m_storage.insert({typeid(T), new ComponentStorage<T>});
-        return static_cast<ComponentStorage<T> &>(*m_storage[typeid(T)]);
+        return static_cast<ComponentStorage<T>*>(m_storage[typeid(T)]);
     }
 
     template <typename T>
     T &insert_or_replace(Entity entity, const T &component)
     {
-        return getStorage<T>().insert_or_replace(entity, component);
+        return getStorage<T>()->insert_or_replace(entity, component);
     }
     template <typename T>
     T &insert(Entity entity, const T &component)
     {
-        return getStorage<T>().insert(entity, component);
+        return getStorage<T>()->insert(entity, component);
     }
     template <typename T>
     T &replace(Entity entity, const T &component)
     {
-        return getStorage<T>().replace(entity, component);
+        return getStorage<T>()->replace(entity, component);
     }
     template <typename T>
     T &get(Entity entity)
     {
-        return getStorage<T>().get(entity);
+        return getStorage<T>()->get(entity);
     }
 
     template <typename Components>
     std::unordered_set<Entity> getEntities()
     {
-        return getStorage<Components>().entities();
+        return getStorage<Components>()->entities();
     }
 
     template <typename Component, typename... OtherComponents>
@@ -117,7 +128,7 @@ public:
     std::unordered_set<Entity> getEntities()
     {
         auto otherEntities = getEntities<OtherComponents...>();
-        auto entities = getStorage<Component>().entities();
+        auto entities = getStorage<Component>()->entities();
         std::erase_if(entities, [&otherEntities](Entity e)
                       { return !otherEntities.contains(e); });
         return entities;
@@ -127,21 +138,21 @@ public:
     auto each()
     {
         auto entities = getEntities<Components...>();
-        std::vector<decltype(std::make_tuple(*entities.begin(), std::ref(getStorage<Components>().get(*entities.begin()))...))> result;
+        std::vector<decltype(std::make_tuple(*entities.begin(), std::ref(getStorage<Components>()->get(*entities.begin()))...))> result;
         for (auto entity : entities)
         {
-            result.push_back(std::make_tuple(entity, std::ref(getStorage<Components>().get(entity))...));
+            result.push_back(std::make_tuple(entity, std::ref(getStorage<Components>()->get(entity))...));
         }
         return result;
     }
 
 private:
     std::unordered_map<std::type_index, ComponentStorageBase *> m_storage;
+    int nextEntity = 1;
 };
 
-Entity Registry::create() const
+Entity Registry::create()
 {
-    static Entity nextEntity = 1;
     Entity entity = nextEntity++;
     return entity;
 }

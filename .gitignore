@@ -1,2 +1,6 @@
 **/build
 .session.vim
+**/.cache
+**/.kdev4
+CMakeLists.txt.user
+*.kdev4

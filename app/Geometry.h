@@ -1,6 +1,9 @@
 #ifndef GEOMETRY_H
 #define GEOMETRY_H
 
+#include <vector>
+#include <glm/glm.hpp>
+
 /// Returns circle with radius and with segmentCount segments at (0;0)
 /// (0;0) first followed by edge vertices CCW
 std::vector<glm::vec2> createCircleVertices(float radius, int segmentCount)
