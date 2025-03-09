@@ -11,7 +11,7 @@
 #include "Geometry.h"
 #include "FontRendering/BMFont.h"
 
-enum class Tile
+enum class TileType
 {
     WATER,
     GRASS,
@@ -90,13 +90,16 @@ int main(int argc, char *argv[])
     BufferData treeBuffer = bufferData(createCircleVertices(20.f, 50));
     BufferData tinkBuffer = bufferData(createCircleVertices(15.f, 50));
     BufferData lumberMillBuffer = bufferData(createRectangleVertices(1200.f, font.common.lineHeight + 10));
+    BufferData tileBuffer = bufferData(createRectangleVertices(0.f, 1.f));
     BufferData rectangleIndexBuffer = bufferIndexData({0,1,2,2,3,0});
+    BufferData rectangleLineIndexBuffer = bufferIndexData({0,1,1,2,2,3,3,0});
     BufferData charPosBuffer = bufferData(createRectangleVertices(font.common.lineHeight, font.common.lineHeight));
     BufferData charTexBuffer = bufferData({{0.2, 0.2}, {0.2, 0.5}, {0.5, 0.5}, {0.5, 0.2}});
 
     auto treeVAO = createPosVAO(treeBuffer.handle);
     auto tinkVAO = createPosVAO(tinkBuffer.handle);
     auto lumberMillVAO = createPosVAO(lumberMillBuffer.handle, rectangleIndexBuffer.handle);
+    auto tileLineVAO = createPosVAO(tileBuffer.handle, tileLineIndexBuffer.handle);
     auto charVAO = createPosTexVAO(charPosBuffer.handle, charTexBuffer.handle, rectangleIndexBuffer.handle);
     RenderData charRenderData { charVAO, rectangleIndexBuffer.elementCount, GL_TRIANGLES, DrawStrategy::ELEMENTS };
 

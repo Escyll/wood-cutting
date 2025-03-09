@@ -39,6 +39,7 @@ struct Patrol
 };
 
 struct Tree {};
+struct Tile {};
 
 struct MovementSystem
 {
@@ -70,6 +71,22 @@ struct MovementSystem
     float speed = 150.f;
     GLFWwindow* window;
     Entity tink;
+};
+
+struct TileSystem
+{
+    void run(Registry &registry, float deltaTime)
+    {
+            //auto projection = glm::ortho(0.f, 40*1920.f/1080.f, 40*1080.f*1080.f, 0.f);
+            //setUniform(shaderID, "projection", projection);
+
+            for (auto [tileEntity, pos, _]: registry.each<Pos, Tile>())
+            {
+                //auto model = glm::translate(glm::mat4(1.0f), glm::vec3(position.x, position.y, 0.f));
+                //setUniform(shaderID, "model", model);
+            }
+    }
+    unsigned int shaderID;
 };
 
 struct WoodGatheringSystem
