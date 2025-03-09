@@ -184,6 +184,7 @@ struct TileSystem
         }
         else if (isKeyPressed(window, GLFW_KEY_S) && keyPressed == 0 && editing && commandString.empty())
         {
+            std::cerr << "Saving level" << std::endl;
             keyPressed = GLFW_KEY_S;
             std::ofstream wf("assets/levels/level.dat", std::ios::out | std::ios::binary);
             auto tiles = registry.each<glm::ivec2, TileType>();
@@ -195,7 +196,7 @@ struct TileSystem
                 wf.write(reinterpret_cast<char*>(&tileType), sizeof(tileType));
             }
             wf.close();
-            std::cerr << "Saved file" << std::endl;
+            std::cerr << "Level saved" << std::endl;
         }
         else if (isKeyPressed(window, GLFW_KEY_L) && keyPressed == 0 && editing)
         {
@@ -222,6 +223,7 @@ struct TileSystem
                 registry.insert<glm::ivec2>(tile, pos);
                 registry.insert<TileType>(tile, type);
             }
+            std::cerr << "Level loaded" << std::endl;
         }
         else if (isKeyPressed(window, GLFW_KEY_G) && keyPressed == 0 && editing)
         {
