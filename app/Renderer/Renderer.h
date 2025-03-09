@@ -82,10 +82,10 @@ void renderText(const std::string& text, BMFont& font, unsigned int texBuffer, u
         }
         BMFontChar& ch = font.chars[letter];
         std::array<glm::vec2, 4> texCoords;
-        texCoords[0] = imageScale*glm::vec2{ch.x, font.common.scaleH - ch.y};
-        texCoords[1] = imageScale*glm::vec2{ch.x+ch.width, font.common.scaleH - ch.y};
-        texCoords[2] = imageScale*glm::vec2{ch.x+ch.width, font.common.scaleH - ch.y - ch.height};
-        texCoords[3] = imageScale*glm::vec2{ch.x, font.common.scaleH - ch.y - ch.height};
+        texCoords[0] = imageScale*glm::vec2{ch.x + 1, font.common.scaleH - ch.y - 1};
+        texCoords[1] = imageScale*glm::vec2{ch.x+ch.width - 1, font.common.scaleH - ch.y - 1};
+        texCoords[2] = imageScale*glm::vec2{ch.x+ch.width - 1, font.common.scaleH - ch.y - ch.height + 1};
+        texCoords[3] = imageScale*glm::vec2{ch.x + 1, font.common.scaleH - ch.y - ch.height + 1};
         glBufferSubData(GL_ARRAY_BUFFER, 0, 4*sizeof(glm::vec2), &texCoords[0]); 
         
         auto model = glm::translate(glm::mat4(1.0f), glm::vec3(xadvance + ch.xoffset, yadvance + ch.yoffset, 0.f));

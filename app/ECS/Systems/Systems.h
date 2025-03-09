@@ -198,8 +198,6 @@ struct RenderSystem
             auto model = glm::translate(glm::mat4(1.0f), glm::vec3(position.x, position.y, 0.f));
             setUniform(shaderID, "model", model);
             auto projection = glm::ortho(0.f, 1920.f, 1080.f, 0.f);
-            //projection = glm::scale(projection, glm::vec3(1.f, -1.f, 1.f));
-            //projection = glm::translate(projection, glm::vec3(
             setUniform(shaderID, "projection", projection);
             setUniform(shaderID, "color", color);
             render(renderData);

@@ -49,7 +49,7 @@ struct ComponentStorage : ComponentStorageBase
             denseIndex[entity] = MaxEntities;
             denseEntity.pop_back();
             dense.pop_back();
-            if constexpr(std::is_same<T, glm::vec2>::value && DEBUGGING)
+            if constexpr(DEBUGGING && std::is_same<T, glm::vec2>::value)
             {
                 std::cerr << "Removing " << entity << std::endl;
                 std::cerr << "denseEntity: ";
@@ -81,7 +81,7 @@ struct ComponentStorage : ComponentStorageBase
         dense.push_back(component);
         denseEntity.push_back(entity);
         denseIndex[entity] = index;
-        if constexpr(std::is_same<T, glm::vec2>::value && DEBUGGING)
+        if constexpr(DEBUGGING && std::is_same<T, glm::vec2>::value)
         {
             std::cerr << "Inserting " << entity << " at " << component.x << " " << component.y << std::endl;
             std::cerr << "denseEntity: ";
