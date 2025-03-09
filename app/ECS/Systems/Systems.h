@@ -227,7 +227,17 @@ struct TileSystem
         else if (isKeyPressed(window, GLFW_KEY_G) && keyPressed == 0 && editing)
         {
             keyPressed = GLFW_KEY_G;
-            registry.replace<TileType>(selectedTile, TileType::GRASS);
+            commandString += "g";
+        }
+        else if (isKeyPressed(window, GLFW_KEY_ENTER) && keyPressed == 0 && editing)
+        {
+            keyPressed = GLFW_KEY_ENTER;
+            std::cerr << "Enter pressed with commandString " << commandString << std::endl;
+            if (commandString == "g")
+            {
+                registry.replace<TileType>(selectedTile, TileType::GRASS);
+            }
+            commandString = "";
         }
         if (!isKeyPressed(window, keyPressed))
         {
