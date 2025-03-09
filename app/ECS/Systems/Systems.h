@@ -185,10 +185,9 @@ struct TileSystem
         else if (isKeyPressed(window, GLFW_KEY_S) && keyPressed == 0 && editing && commandString.empty())
         {
             keyPressed = GLFW_KEY_S;
-            std::ofstream wf("level.dat", std::ios::out | std::ios::binary);
+            std::ofstream wf("assets/levels/level.dat", std::ios::out | std::ios::binary);
             auto tiles = registry.each<glm::ivec2, TileType>();
             uint32_t count = tiles.size();
-            std::cerr << "Writing count " << count << std::endl;
             wf.write(reinterpret_cast<const char*>(&count), sizeof(count));
             for (auto [tileEntity, pos, tileType]: tiles)
             {
@@ -200,10 +199,10 @@ struct TileSystem
         }
         else if (isKeyPressed(window, GLFW_KEY_L) && keyPressed == 0 && editing)
         {
+            std::cerr << "Loading level" << std::endl;
             keyPressed = GLFW_KEY_L;
-            std::ifstream wf("level.dat", std::ios::in | std::ios::binary);
+            std::ifstream wf("assets/levels/level.dat", std::ios::in | std::ios::binary);
             uint32_t count = 0;
-            std::cerr << "Reading count ";
             wf.read(reinterpret_cast<char*>(&count), sizeof(count));
             if (count == 0)
             {
