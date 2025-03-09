@@ -11,6 +11,65 @@
 using Color = glm::vec4;
 using Pos = glm::vec2;
 
+enum class TileType
+{
+    UNSET = 0,
+    WATER,
+    GRASS,
+    PATH,
+    PATH_MINERAL_1,
+    PATH_MINERAL_2,
+    PATH_MINERAL_3,
+    GRASS_WATER_N,
+    GRASS_WATER_NE,
+    GRASS_WATER_E,
+    GRASS_WATER_SE,
+    GRASS_WATER_S,
+    GRASS_WATER_SW,
+    GRASS_WATER_W,
+    GRASS_WATER_NW,
+    GRASS_PATH_N,
+    GRASS_PATH_NE,
+    GRASS_PATH_E,
+    GRASS_PATH_SE,
+    GRASS_PATH_S,
+    GRASS_PATH_SW,
+    GRASS_PATH_W,
+    GRASS_PATH_NW,
+    PATH_GRASS_N,
+    PATH_GRASS_NE,
+    PATH_GRASS_E,
+    PATH_GRASS_SE,
+    PATH_GRASS_S,
+    PATH_GRASS_SW,
+    PATH_GRASS_W,
+    PATH_GRASS_NW,
+    PATH_WATER_N,
+    PATH_WATER_NE,
+    PATH_WATER_E,
+    PATH_WATER_SE,
+    PATH_WATER_S,
+    PATH_WATER_SW,
+    PATH_WATER_W,
+    PATH_WATER_NW,
+    WATER_GRASS_N,
+    WATER_GRASS_NE,
+    WATER_GRASS_E,
+    WATER_GRASS_SE,
+    WATER_GRASS_S,
+    WATER_GRASS_SW,
+    WATER_GRASS_W,
+    WATER_GRASS_NW,
+    WATER_PATH_N,
+    WATER_PATH_NE,
+    WATER_PATH_E,
+    WATER_PATH_SE,
+    WATER_PATH_S,
+    WATER_PATH_SW,
+    WATER_PATH_W,
+    WATER_PATH_NW,
+};
+
 enum Missions
 {
     START,
@@ -39,12 +98,15 @@ struct Patrol
 };
 
 struct Tree {};
-struct Tile {};
+
+bool editing = false;
 
 struct MovementSystem
 {
     void run(Registry &registry, float deltaTime)
     {
+        if (editing)
+            return;
         auto& pos = registry.get<Pos>(tink);
         glm::vec2 displacement {0.f, 0.f};
         if (isKeyPressed(window, GLFW_KEY_W))
@@ -68,25 +130,138 @@ struct MovementSystem
             pos += speed * deltaTime * glm::normalize(displacement);
         }
     }
-    float speed = 150.f;
+    float speed = 200.f;
     GLFWwindow* window;
     Entity tink;
 };
 
 struct TileSystem
 {
+    void selectTile(const glm::ivec2& nextSelectedPosition, Registry &registry)
+    {
+        int nextSelectedTile = 0;
+        for (auto [tileEntity, pos, _]: registry.each<glm::ivec2, TileType>())
+        {
+            if (pos.x == nextSelectedPosition.x && pos.y == nextSelectedPosition.y)
+            {
+                nextSelectedTile = tileEntity;
+            }
+        }
+        if (nextSelectedTile != 0)
+        {
+            selectedTile = nextSelectedTile;
+            selectedPosition = nextSelectedPosition;
+        }
+    }
+
     void run(Registry &registry, float deltaTime)
     {
-            //auto projection = glm::ortho(0.f, 40*1920.f/1080.f, 40*1080.f*1080.f, 0.f);
-            //setUniform(shaderID, "projection", projection);
-
-            for (auto [tileEntity, pos, _]: registry.each<Pos, Tile>())
+        if (isKeyPressed(window, GLFW_KEY_RIGHT) && keyPressed == 0 && editing)
+        {
+            keyPressed = GLFW_KEY_RIGHT;
+            selectTile({selectedPosition.x + 1, selectedPosition.y}, registry);
+        }
+        else if (isKeyPressed(window, GLFW_KEY_LEFT) && keyPressed == 0 && editing)
+        {
+            keyPressed = GLFW_KEY_LEFT;
+            selectTile({selectedPosition.x - 1, selectedPosition.y}, registry);
+        }
+        else if (isKeyPressed(window, GLFW_KEY_UP) && keyPressed == 0 && editing)
+        {
+            keyPressed = GLFW_KEY_UP;
+            selectTile({selectedPosition.x, selectedPosition.y - 1}, registry);
+        }
+        else if (isKeyPressed(window, GLFW_KEY_DOWN) && keyPressed == 0 && editing)
+        {
+            keyPressed = GLFW_KEY_DOWN;
+            selectTile({selectedPosition.x, selectedPosition.y + 1}, registry);
+        }
+        else if (isKeyPressed(window, GLFW_KEY_E) && keyPressed == 0)
+        {
+            keyPressed = GLFW_KEY_E;
+            editing = !editing;
+            commandString = "";
+        }
+        else if (isKeyPressed(window, GLFW_KEY_S) && keyPressed == 0 && editing && commandString.empty())
+        {
+            keyPressed = GLFW_KEY_S;
+            std::ofstream wf("level.dat", std::ios::out | std::ios::binary);
+            auto tiles = registry.each<glm::ivec2, TileType>();
+            uint32_t count = tiles.size();
+            std::cerr << "Writing count " << count << std::endl;
+            wf.write(reinterpret_cast<const char*>(&count), sizeof(count));
+            for (auto [tileEntity, pos, tileType]: tiles)
             {
-                //auto model = glm::translate(glm::mat4(1.0f), glm::vec3(position.x, position.y, 0.f));
-                //setUniform(shaderID, "model", model);
+                wf.write(reinterpret_cast<char*>(&pos), sizeof(pos));
+                wf.write(reinterpret_cast<char*>(&tileType), sizeof(tileType));
             }
+            wf.close();
+            std::cerr << "Saved file" << std::endl;
+        }
+        else if (isKeyPressed(window, GLFW_KEY_L) && keyPressed == 0 && editing)
+        {
+            keyPressed = GLFW_KEY_L;
+            std::ifstream wf("level.dat", std::ios::in | std::ios::binary);
+            uint32_t count = 0;
+            std::cerr << "Reading count ";
+            wf.read(reinterpret_cast<char*>(&count), sizeof(count));
+            if (count == 0)
+            {
+                return;
+            }
+            for (auto [tileEntity, tileType]: registry.each<TileType>())
+            {
+                registry.remove(tileEntity);
+            }
+            for (uint32_t i = 0; i < count; i++)
+            {
+                glm::ivec2 pos;
+                TileType type;
+                wf.read(reinterpret_cast<char*>(&pos), sizeof(pos));
+                wf.read(reinterpret_cast<char*>(&type), sizeof(type));
+                auto tile = registry.create();
+                registry.insert<glm::ivec2>(tile, pos);
+                registry.insert<TileType>(tile, type);
+            }
+        }
+        else if (isKeyPressed(window, GLFW_KEY_G) && keyPressed == 0 && editing)
+        {
+            keyPressed = GLFW_KEY_G;
+            registry.replace<TileType>(selectedTile, TileType::GRASS);
+        }
+        if (!isKeyPressed(window, keyPressed))
+        {
+            keyPressed = 0;
+        }
+
+        auto projection = glm::ortho(0.f, 30*1920.f/1080.f, 30.f, 0.f);
+        setUniform(shaderID, "projection", projection);
+
+        glEnable(GL_DEPTH_TEST);
+        for (auto [tileEntity, pos, type]: registry.each<glm::ivec2, TileType>())
+        {
+            auto model = glm::translate(glm::mat4(1.0f), glm::vec3(pos.x - 0.5f, pos.y - 0.5f, selectedTile == tileEntity ? 1.f : 0.f));
+            setUniform(shaderID, "model", model);
+            if (editing)
+            {
+                if (selectedTile == 0)
+                {
+                    selectedTile = tileEntity;
+                    selectedPosition = pos;
+                }
+                setUniform(shaderID, "color", selectedTile == tileEntity ? glm::vec4{1.f, 1.f, 0.f, 1.f} : type == TileType::GRASS ? glm::vec4{0.f, 1.f, 0.f, 1.f} : glm::vec4{0.f, 0.f, 0.f, 1.f});
+                render(lineRenderData);
+            }
+        }
+        glDisable(GL_DEPTH_TEST);
     }
     unsigned int shaderID;
+    GLFWwindow* window;
+    unsigned int keyPressed = 0;
+    Entity selectedTile = 0;
+    glm::ivec2 selectedPosition {-1, -1};
+    RenderData lineRenderData;
+    std::string commandString;
 };
 
 struct WoodGatheringSystem

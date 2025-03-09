@@ -11,64 +11,6 @@
 #include "Geometry.h"
 #include "FontRendering/BMFont.h"
 
-enum class TileType
-{
-    WATER,
-    GRASS,
-    PATH,
-    PATH_MINERAL_1,
-    PATH_MINERAL_2,
-    PATH_MINERAL_3,
-    GRASS_WATER_N,
-    GRASS_WATER_NE,
-    GRASS_WATER_E,
-    GRASS_WATER_SE,
-    GRASS_WATER_S,
-    GRASS_WATER_SW,
-    GRASS_WATER_W,
-    GRASS_WATER_NW,
-    GRASS_PATH_N,
-    GRASS_PATH_NE,
-    GRASS_PATH_E,
-    GRASS_PATH_SE,
-    GRASS_PATH_S,
-    GRASS_PATH_SW,
-    GRASS_PATH_W,
-    GRASS_PATH_NW,
-    PATH_GRASS_N,
-    PATH_GRASS_NE,
-    PATH_GRASS_E,
-    PATH_GRASS_SE,
-    PATH_GRASS_S,
-    PATH_GRASS_SW,
-    PATH_GRASS_W,
-    PATH_GRASS_NW,
-    PATH_WATER_N,
-    PATH_WATER_NE,
-    PATH_WATER_E,
-    PATH_WATER_SE,
-    PATH_WATER_S,
-    PATH_WATER_SW,
-    PATH_WATER_W,
-    PATH_WATER_NW,
-    WATER_GRASS_N,
-    WATER_GRASS_NE,
-    WATER_GRASS_E,
-    WATER_GRASS_SE,
-    WATER_GRASS_S,
-    WATER_GRASS_SW,
-    WATER_GRASS_W,
-    WATER_GRASS_NW,
-    WATER_PATH_N,
-    WATER_PATH_NE,
-    WATER_PATH_E,
-    WATER_PATH_SE,
-    WATER_PATH_S,
-    WATER_PATH_SW,
-    WATER_PATH_W,
-    WATER_PATH_NW,
-};
-
 int main(int argc, char *argv[])
 {
     auto window = initializeOpenGLAndCreateWindow();
@@ -90,7 +32,7 @@ int main(int argc, char *argv[])
     BufferData treeBuffer = bufferData(createCircleVertices(20.f, 50));
     BufferData tinkBuffer = bufferData(createCircleVertices(15.f, 50));
     BufferData lumberMillBuffer = bufferData(createRectangleVertices(1200.f, font.common.lineHeight + 10));
-    BufferData tileBuffer = bufferData(createRectangleVertices(0.f, 1.f));
+    BufferData tileBuffer = bufferData(createRectangleVertices(1.f, 1.f));
     BufferData rectangleIndexBuffer = bufferIndexData({0,1,2,2,3,0});
     BufferData rectangleLineIndexBuffer = bufferIndexData({0,1,1,2,2,3,3,0});
     BufferData charPosBuffer = bufferData(createRectangleVertices(font.common.lineHeight, font.common.lineHeight));
@@ -99,12 +41,17 @@ int main(int argc, char *argv[])
     auto treeVAO = createPosVAO(treeBuffer.handle);
     auto tinkVAO = createPosVAO(tinkBuffer.handle);
     auto lumberMillVAO = createPosVAO(lumberMillBuffer.handle, rectangleIndexBuffer.handle);
-    auto tileLineVAO = createPosVAO(tileBuffer.handle, tileLineIndexBuffer.handle);
+    auto tileLineVAO = createPosVAO(tileBuffer.handle, rectangleLineIndexBuffer.handle);
     auto charVAO = createPosTexVAO(charPosBuffer.handle, charTexBuffer.handle, rectangleIndexBuffer.handle);
     RenderData charRenderData { charVAO, rectangleIndexBuffer.elementCount, GL_TRIANGLES, DrawStrategy::ELEMENTS };
+    RenderData tileLineRenderData { tileLineVAO, rectangleLineIndexBuffer.elementCount, GL_LINES, DrawStrategy::ELEMENTS };
 
     RenderSystem renderSystem;
     renderSystem.shaderID = unlitColorShader;
+    TileSystem tileSystem;
+    tileSystem.shaderID = unlitColorShader;
+    tileSystem.window = window;
+    tileSystem.lineRenderData = tileLineRenderData;
     //WoodCuttingSystem woodCuttingSystem;
 
     Registry registry;
@@ -126,6 +73,16 @@ int main(int argc, char *argv[])
         registry.insert<Pos>(tree, Pos{disX(gen), disY(gen)});
         registry.insert<Color>(tree, Color{0.1, 0.2, 0.1, 1.0});
         registry.insert<RenderData>(tree, {treeVAO, circleBuffer.elementCount, GL_TRIANGLE_FAN});
+    }
+    
+    for (int x = 0; x < 30*1920.f/1080; x++)
+    {
+        for (int y = 0; y < 31; y++)
+        {
+            auto tile = registry.create();
+            registry.insert<TileType>(tile, TileType::UNSET);
+            registry.insert<glm::ivec2>(tile, {x, y});
+        }
     }
 
     registry.insert<Pos>(tink, Pos{900, 500});
@@ -158,6 +115,7 @@ int main(int argc, char *argv[])
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         renderSystem.run(registry, timeDelta);
+        tileSystem.run(registry, timeDelta);
 
         glUseProgram(unlitTextureShader);
         auto projection = glm::ortho(0.0f, 1920.0f, 1080.0f, 0.0f);

@@ -53,13 +53,14 @@ void setUniform(unsigned int shader, const std::string& name, const glm::mat4& m
 void render(const RenderData& renderData)
 {
     glBindVertexArray(renderData.VAO);
-    if (renderData.drawStrategy == DrawStrategy::ELEMENTS)
+    switch (renderData.drawStrategy)
     {
-        glDrawElements(renderData.drawMode, renderData.elementCount, GL_UNSIGNED_INT, nullptr);
-    }
-    else
-    {
-        glDrawArrays(renderData.drawMode, 0, renderData.elementCount);
+        case DrawStrategy::ELEMENTS:
+            glDrawElements(renderData.drawMode, renderData.elementCount, GL_UNSIGNED_INT, nullptr);
+            break;
+        case DrawStrategy::ARRAYS:
+            glDrawArrays(renderData.drawMode, 0, renderData.elementCount);
+            break;
     }
 }
 

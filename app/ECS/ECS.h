@@ -15,7 +15,7 @@
 #define DEBUGGING false
 
 using Entity = uint32_t;
-static inline Entity MaxEntities = 114;
+static inline Entity MaxEntities = 100'000;
 
 struct ComponentStorageBase
 {
