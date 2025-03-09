@@ -13,9 +13,10 @@ target_sources(wood-cutting PRIVATE
     ECS/ECS.h
     ECS/Systems/Systems.h
     Renderer/Renderer.h
-    Renderer/Renderer.cpp
     Renderer/Shaders.h
+    Renderer/Textures.h
+    FontRendering/BMFont.h
 )
 
-target_link_libraries(wood-cutting PRIVATE glfw OpenGL::GL glad glm)
+target_link_libraries(wood-cutting PRIVATE glfw OpenGL::GL glad glm stb_image)
 target_include_directories(wood-cutting PRIVATE ${PROJECT_SOURCE_DIR})

@@ -1,22 +1,39 @@
 #ifndef RENDERER_SHADERS_H
 #define RENDERER_SHADERS_H
 
-// TODO JH: Load from disk and out of renderer, but in app
-const char* vertexShaderSource = R"(#version 330 core
-                                    layout (location = 0) in vec2 aPos;
-                                    uniform mat4 transform;
-                                    void main()
-                                    {
-                                        gl_Position = transform * vec4(aPos, 0.0, 1.0);
-                                    })";
+#include <glad/glad.h>
+#include <fstream>
+#include <sstream>
 
-const char* fragmentShaderSource = R"(#version 330 core
-                                      out vec4 FragColor;
-                                      uniform vec4 color;
-                                      void main()
-                                      {
-                                          FragColor = color;
-                                      })";
+std::string readFile(const std::string& path)
+{
+    std::ifstream file(path);
+    std::stringstream stream;
+    stream << file.rdbuf();
+    return stream.str();
+}
+
+[[nodiscard]] unsigned int createShaderProgram(const char* vertexShaderSource, const char* fragmentShaderSource)
+{
+    unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(vertexShader, 1, &vertexShaderSource, nullptr);
+    glCompileShader(vertexShader);
+    
+    unsigned int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(fragmentShader, 1, &fragmentShaderSource, nullptr);
+    glCompileShader(fragmentShader);
+
+    unsigned int shaderProgram;
+    shaderProgram = glCreateProgram();
+
+    glAttachShader(shaderProgram, vertexShader);
+    glAttachShader(shaderProgram, fragmentShader);
+    glLinkProgram(shaderProgram);
+
+    glDeleteShader(vertexShader);
+    glDeleteShader(fragmentShader);
+    return shaderProgram;
+}
 
 
 #endif

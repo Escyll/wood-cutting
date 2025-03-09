@@ -3,43 +3,107 @@
 
 #include <cstdint>
 #include <vector>
+#include <iostream>
 #include <unordered_map>
 #include <typeindex>
 #include <glm/glm.hpp>
 #include <unordered_set>
 #include <tuple>
 #include <functional>
+#include <algorithm>
+
+#define DEBUGGING false
 
 using Entity = uint32_t;
-static inline Entity MaxEntities = 1'000'000;
+static inline Entity MaxEntities = 114;
 
 struct ComponentStorageBase
 {
+    virtual ~ComponentStorageBase() {}
+    virtual void remove(Entity entity) = 0;
 };
 
 template <typename T>
 struct ComponentStorage : ComponentStorageBase
 {
     std::vector<T> dense;
-    std::vector<Entity> denseIndex;
-    std::unordered_set<Entity> m_entities;
-
-    ComponentStorage()
-    {
-        denseIndex.resize(MaxEntities);
-    }
+    std::vector<Entity> denseIndex = std::vector<Entity>(MaxEntities);
+    std::vector<Entity> denseEntity;
 
     bool contains(Entity entity)
     {
-        return denseIndex[entity] != 0;
+        auto denseId = denseIndex[entity];
+        return denseId < denseEntity.size() && denseEntity[denseId] == entity;
+    }
+
+    void remove(Entity entity) override
+    {
+        if (contains(entity))
+        {
+            Entity lastEntity = denseEntity.back();
+            size_t lastIndex = denseEntity.size() - 1;
+            size_t entityIndex = denseIndex[entity];
+            std::swap(denseEntity[lastIndex], denseEntity[entityIndex]);
+            std::swap(dense[lastIndex], dense[entityIndex]);
+            denseIndex[lastEntity] = entityIndex;
+            denseIndex[entity] = MaxEntities;
+            denseEntity.pop_back();
+            dense.pop_back();
+            if constexpr(std::is_same<T, glm::vec2>::value && DEBUGGING)
+            {
+                std::cerr << "Removing " << entity << std::endl;
+                std::cerr << "denseEntity: ";
+                for (auto en: denseEntity)
+                {
+                    std::cerr << en << " ";
+                }
+                std::cerr << std::endl;
+                std::cerr << "denseIndex: ";
+                for (auto in: denseIndex)
+                {
+                    std::cerr << in << " ";
+                }
+                std::cerr << std::endl;
+                std::cerr << "dense: ";
+                for (auto pos: dense)
+                {
+                    std::cerr << pos.x << " " << pos.y << " , ";
+                }
+                std::cerr << std::endl;
+
+            }
+        }
     }
 
     T &insert(Entity entity, const T &component)
     {
-        m_entities.insert(entity);
         auto index = dense.size();
         dense.push_back(component);
+        denseEntity.push_back(entity);
         denseIndex[entity] = index;
+        if constexpr(std::is_same<T, glm::vec2>::value && DEBUGGING)
+        {
+            std::cerr << "Inserting " << entity << " at " << component.x << " " << component.y << std::endl;
+            std::cerr << "denseEntity: ";
+            for (auto en: denseEntity)
+            {
+                std::cerr << en << " ";
+            }
+            std::cerr << std::endl;
+            std::cerr << "denseIndex: ";
+            for (auto in: denseIndex)
+            {
+                std::cerr << in << " ";
+            }
+            std::cerr << std::endl;
+            std::cerr << "dense: ";
+            for (auto pos: dense)
+            {
+                std::cerr << pos.x << " " << pos.y << " , ";
+            }
+            std::cerr << std::endl;
+
+        }
         return dense.at(index);
     }
 
@@ -61,12 +125,12 @@ struct ComponentStorage : ComponentStorageBase
         return dense[index];
     }
 
-    const std::unordered_set<Entity> &entities() const
+    const std::vector<Entity> &entities() const
     {
-        return m_entities;
+        return denseEntity;
     }
 
-    std::vector<T *> get(const std::unordered_set<Entity> &entities) const
+    std::vector<T *> get(const std::vector<Entity> &entities) const
     {
         std::vector<T *> result;
         for (auto entity : entities)
@@ -117,21 +181,41 @@ public:
         return getStorage<T>()->get(entity);
     }
 
-    template <typename Components>
-    std::unordered_set<Entity> getEntities()
+    template <typename T>
+    bool has(Entity entity)
     {
-        return getStorage<Components>()->entities();
+        return getStorage<T>()->contains(entity);
+    }
+
+    template <typename T>
+    void remove(Entity entity)
+    {
+        return getStorage<T>()->remove(entity);
+    }
+
+    void remove(Entity entity)
+    {
+        for (auto& [_, storage] : m_storage)
+        {
+            storage->remove(entity);
+        }
+    }
+
+    template <typename Component>
+    std::vector<Entity> getEntities()
+    {
+        return getStorage<Component>()->entities();
     }
 
     template <typename Component, typename... OtherComponents>
         requires(sizeof...(OtherComponents) >= 1)
-    std::unordered_set<Entity> getEntities()
+    std::vector<Entity> getEntities()
     {
         auto otherEntities = getEntities<OtherComponents...>();
         auto entities = getStorage<Component>()->entities();
-        std::erase_if(entities, [&otherEntities](Entity e)
-                      { return !otherEntities.contains(e); });
-        return entities;
+        std::erase_if(otherEntities, [storage = getStorage<Component>()](Entity e)
+                      { return !storage->contains(e); });
+        return otherEntities;
     }
 
     template <typename... Components>

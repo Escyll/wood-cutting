@@ -9,6 +9,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include "FontRendering/BMFont.h"
 
 enum class DrawStrategy
 {
@@ -34,6 +35,11 @@ unsigned int getLoc(unsigned int shader, const std::string& name)
     return glGetUniformLocation(shader, name.c_str());
 }
 
+void setUniform(unsigned int shader, const std::string& name, int value)
+{
+    glUniform1i(getLoc(shader, name), value);
+}
+
 void setUniform(unsigned int shader, const std::string& name, const glm::vec4& vec)
 {
     glUniform4f(getLoc(shader, name), vec.x, vec.y, vec.z, vec.w);
@@ -54,6 +60,39 @@ void render(const RenderData& renderData)
     else
     {
         glDrawArrays(renderData.drawMode, 0, renderData.elementCount);
+    }
+}
+
+void renderText(const std::string& text, BMFont& font, unsigned int texBuffer, unsigned int shader, unsigned int texture, float screenScale, float screenLineHeight, RenderData& renderData)
+{
+    glm::vec2 imageScale { 1.f / font.common.scaleW, 1.f / font.common.scaleH };
+    setUniform(shader, "texture1", 0);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, texture);
+    glBindBuffer(GL_ARRAY_BUFFER, texBuffer);
+    float xadvance = 0;
+    float yadvance = 0;
+    for (char letter : text)
+    {
+        if (letter == '\n')
+        {
+            yadvance += font.common.lineHeight;
+            xadvance = 0;
+            continue;
+        }
+        BMFontChar& ch = font.chars[letter];
+        std::array<glm::vec2, 4> texCoords;
+        texCoords[0] = imageScale*glm::vec2{ch.x, font.common.scaleH - ch.y};
+        texCoords[1] = imageScale*glm::vec2{ch.x+ch.width, font.common.scaleH - ch.y};
+        texCoords[2] = imageScale*glm::vec2{ch.x+ch.width, font.common.scaleH - ch.y - ch.height};
+        texCoords[3] = imageScale*glm::vec2{ch.x, font.common.scaleH - ch.y - ch.height};
+        glBufferSubData(GL_ARRAY_BUFFER, 0, 4*sizeof(glm::vec2), &texCoords[0]); 
+        
+        auto model = glm::translate(glm::mat4(1.0f), glm::vec3(xadvance + ch.xoffset, yadvance + ch.yoffset, 0.f));
+        model = glm::scale(model, glm::vec3((float)ch.width / font.common.lineHeight, (float)ch.height / font.common.lineHeight, 1.0));
+        setUniform(shader, "model", model);
+        render(renderData);
+        xadvance += ch.xadvance;
     }
 }
 
@@ -93,26 +132,23 @@ void render(const RenderData& renderData)
     return VAO;
 }
 
-[[nodiscard]] unsigned int createShaderProgram(const char* vertexShaderSource, const char* fragmentShaderSource)
+[[nodiscard]] unsigned int createPosTexVAO(unsigned int posVBO, unsigned int texVBO, unsigned int ebo = 0)
 {
-    unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertexShader, 1, &vertexShaderSource, nullptr);
-    glCompileShader(vertexShader);
-    
-    unsigned int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragmentShader, 1, &fragmentShaderSource, nullptr);
-    glCompileShader(fragmentShader);
-
-    unsigned int shaderProgram;
-    shaderProgram = glCreateProgram();
-
-    glAttachShader(shaderProgram, vertexShader);
-    glAttachShader(shaderProgram, fragmentShader);
-    glLinkProgram(shaderProgram);
-
-    glDeleteShader(vertexShader);
-    glDeleteShader(fragmentShader);
-    return shaderProgram;
+    unsigned int VAO;
+    glGenVertexArrays(1, &VAO);
+    glBindVertexArray(VAO);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (void*)0);
+    glVertexArrayVertexBuffer(VAO, 0, posVBO, 0, sizeof(glm::vec2));
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (void*)0);
+    glVertexArrayVertexBuffer(VAO, 1, texVBO, 0, sizeof(glm::vec2));
+    glEnableVertexAttribArray(1);
+    if (ebo > 0)
+    {
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+    }
+    glBindVertexArray(0);
+    return VAO;
 }
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
@@ -137,10 +173,10 @@ bool isKeyPressed(GLFWwindow* window, int key)
 {
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     
-    GLFWwindow* window = glfwCreateWindow(800, 600, "LearnOpenGL", nullptr, nullptr);
+    GLFWwindow* window = glfwCreateWindow(1920, 1080, "Wood cutting", nullptr, nullptr);
     if (window == nullptr)
     {
         std::cout << "Failed to create GLFW window" << std::endl;
