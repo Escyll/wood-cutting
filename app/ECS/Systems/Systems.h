@@ -77,6 +77,9 @@ enum class DecoType
     WOOD = 0,
     GLAZE,
     FLOWER,
+    OVEN,
+    BRIDGE_HOR,
+    BRIDGE_VER
 };
 
 enum Missions
@@ -90,19 +93,18 @@ enum Missions
     CHAT_GEORGE_5,
     GATHER_CLAY,
     CHAT_GEORGE_6,
-    CHAT_GEORGE_7,
-    MAKE_PIECE,
-    MAKE_PIECE_HAND_IN,
     BAKE_PIECE,
     BAKE_PIECE_HAND_IN,
-    GATHER_WOOD_2,
-    GATHER_GLAZE,
+    CHAT_GEORGE_7,
+    CHAT_GEORGE_8,
+    GATHER_WOOD_AND_GLAZE,
+    CHAT_GEORGE_9,
     GLAZE_PIECE,
     GLAZE_PIECE_HAND_IN,
-    BAKE_PIECE_2,
     SHOW_GEORGE,
     CHAT_GEORGE_JURY,
-    CHAT_GEORGE_YOU_WON
+    CHAT_GEORGE_YOU_WON,
+    END
 };
 
 struct GameState
@@ -123,6 +125,8 @@ struct Patrol
 };
 
 struct Tree {};
+
+struct Blocked{};
 
 bool editing = false;
 
@@ -152,7 +156,14 @@ struct MovementSystem
         }
         if (glm::length(displacement) > 0.1f)
         {
-            pos += speed * deltaTime * glm::normalize(displacement);
+            auto newPos = pos + speed * deltaTime * glm::normalize(displacement);
+            glm::ivec2 tilePos { newPos.x, newPos.y };
+            for (auto [_, pos, __] : registry.each<glm::ivec2, Blocked>())
+            {
+                if (pos == tilePos)
+                    return;
+            }
+            pos = newPos;
         }
     }
     GameState& gameState;
@@ -160,6 +171,75 @@ struct MovementSystem
     GLFWwindow* window;
     Entity tink;
 };
+
+void loadLevel(Registry& registry)
+{
+    std::cerr << "Loading level" << std::endl;
+    std::ifstream wf("assets/levels/level.dat", std::ios::in | std::ios::binary);
+    uint32_t count = 0;
+    wf.read(reinterpret_cast<char*>(&count), sizeof(count));
+    if (count == 0)
+    {
+        return;
+    }
+    for (auto [tileEntity, tileType]: registry.each<TileType>())
+    {
+        registry.remove(tileEntity);
+    }
+    for (uint32_t i = 0; i < count; i++)
+    {
+        glm::ivec2 pos;
+        TileType type;
+        wf.read(reinterpret_cast<char*>(&pos), sizeof(pos));
+        wf.read(reinterpret_cast<char*>(&type), sizeof(type));
+        auto tile = registry.create();
+        registry.insert<glm::ivec2>(tile, pos);
+        registry.insert<TileType>(tile, type);
+    }
+    wf.read(reinterpret_cast<char*>(&count), sizeof(count));
+    if (count == 0)
+    {
+        return;
+    }
+    for (auto [tileEntity, tileType]: registry.each<DecoType>())
+    {
+        registry.remove(tileEntity);
+    }
+    for (uint32_t i = 0; i < count; i++)
+    {
+        glm::ivec2 pos;
+        DecoType type;
+        wf.read(reinterpret_cast<char*>(&pos), sizeof(pos));
+        wf.read(reinterpret_cast<char*>(&type), sizeof(type));
+        auto tile = registry.create();
+        registry.insert<glm::ivec2>(tile, pos);
+        registry.insert<DecoType>(tile, type);
+    }
+    wf.read(reinterpret_cast<char*>(&count), sizeof(count));
+    if (count == 0)
+    {
+        return;
+    }
+    for (auto [tileEntity, _]: registry.each<Blocked>())
+    {
+        registry.remove(tileEntity);
+    }
+    for (uint32_t i = 0; i < count; i++)
+    {
+        glm::ivec2 pos;
+        wf.read(reinterpret_cast<char*>(&pos), sizeof(pos));
+        for (auto [tile, tilePos, __]: registry.each<glm::ivec2, TileType>())
+        {
+            if (pos == tilePos)
+            {
+                registry.insert<glm::ivec2>(tile, pos);
+                registry.insert<Blocked>(tile, {});
+            }
+        }
+    }
+
+    std::cerr << "Level loaded" << std::endl;
+}
 
 struct TileSystem
 {
@@ -254,55 +334,27 @@ struct TileSystem
                 wf.write(reinterpret_cast<char*>(&pos), sizeof(pos));
                 wf.write(reinterpret_cast<char*>(&decoType), sizeof(decoType));
             }
+            auto blockedTiles = registry.each<glm::ivec2, Blocked>();
+            count = blockedTiles.size();
+            wf.write(reinterpret_cast<const char*>(&count), sizeof(count));
+            for (auto [tileEntity, pos, _]: blockedTiles)
+            {
+                wf.write(reinterpret_cast<char*>(&pos), sizeof(pos));
+            }
             wf.close();
             std::cerr << "Level saved" << std::endl;
         }
         else if (isKeyPressed(window, GLFW_KEY_L) && keyPressed == 0 && editing)
         {
-            std::cerr << "Loading level" << std::endl;
             keyPressed = GLFW_KEY_L;
-            std::ifstream wf("assets/levels/level.dat", std::ios::in | std::ios::binary);
-            uint32_t count = 0;
-            wf.read(reinterpret_cast<char*>(&count), sizeof(count));
-            if (count == 0)
-            {
-                return;
-            }
-            for (auto [tileEntity, tileType]: registry.each<TileType>())
-            {
-                registry.remove(tileEntity);
-            }
-            for (uint32_t i = 0; i < count; i++)
-            {
-                glm::ivec2 pos;
-                TileType type;
-                wf.read(reinterpret_cast<char*>(&pos), sizeof(pos));
-                wf.read(reinterpret_cast<char*>(&type), sizeof(type));
-                auto tile = registry.create();
-                registry.insert<glm::ivec2>(tile, pos);
-                registry.insert<TileType>(tile, type);
-            }
-            wf.read(reinterpret_cast<char*>(&count), sizeof(count));
-            if (count == 0)
-            {
-                return;
-            }
-            for (auto [tileEntity, tileType]: registry.each<DecoType>())
-            {
-                registry.remove(tileEntity);
-            }
-            for (uint32_t i = 0; i < count; i++)
-            {
-                glm::ivec2 pos;
-                DecoType type;
-                wf.read(reinterpret_cast<char*>(&pos), sizeof(pos));
-                wf.read(reinterpret_cast<char*>(&type), sizeof(type));
-                auto tile = registry.create();
-                registry.insert<glm::ivec2>(tile, pos);
-                registry.insert<DecoType>(tile, type);
-            }
-
-            std::cerr << "Level loaded" << std::endl;
+            loadLevel(registry);
+        }
+        else if (isKeyPressed(window, GLFW_KEY_F2) && keyPressed == 0)
+        {
+            keyPressed = GLFW_KEY_F2;
+            loadLevel(registry);
+            gameState = GameState{};
+            registry.replace<Pos>(tink, {25, 20});
         }
         else if (isKeyPressed(window, GLFW_KEY_F1) && keyPressed == 0 && editing)
         {
@@ -332,6 +384,15 @@ struct TileSystem
             keyPressed = GLFW_KEY_C;
             registry.replace<TileType>(selectedTile, TileType::CLAY);
         }
+        else if (isKeyPressed(window, GLFW_KEY_B) && keyPressed == 0 && editing)
+        {
+            keyPressed = GLFW_KEY_B;
+            bool shifted = isKeyPressed(window, GLFW_KEY_LEFT_SHIFT) || isKeyPressed(window, GLFW_KEY_RIGHT_SHIFT);
+            if (shifted)
+                registry.remove<Blocked>(selectedTile);
+            else
+                registry.insert_or_replace<Blocked>(selectedTile, {});
+        }
         else if (isKeyPressed(window, GLFW_KEY_1) && keyPressed == 0 && editing)
         {
             keyPressed = GLFW_KEY_1;
@@ -346,6 +407,21 @@ struct TileSystem
         {
             keyPressed = GLFW_KEY_3;
             registry.insert_or_replace<DecoType>(selectedTile, DecoType::FLOWER);
+        }
+        else if (isKeyPressed(window, GLFW_KEY_4) && keyPressed == 0 && editing)
+        {
+            keyPressed = GLFW_KEY_4;
+            registry.insert_or_replace<DecoType>(selectedTile, DecoType::OVEN);
+        }
+        else if (isKeyPressed(window, GLFW_KEY_5) && keyPressed == 0 && editing)
+        {
+            keyPressed = GLFW_KEY_5;
+            registry.insert_or_replace<DecoType>(selectedTile, DecoType::BRIDGE_HOR);
+        }
+        else if (isKeyPressed(window, GLFW_KEY_6) && keyPressed == 0 && editing)
+        {
+            keyPressed = GLFW_KEY_6;
+            registry.insert_or_replace<DecoType>(selectedTile, DecoType::BRIDGE_VER);
         }
         else if (isKeyPressed(window, GLFW_KEY_N) && keyPressed == 0 && editing)
         {
@@ -594,12 +670,29 @@ struct TileSystem
                     glBindTexture(GL_TEXTURE_2D, outdoorDecorTexture);
                     break;
                 case DecoType::GLAZE:
-                    texCoords = toTextureCoord({0, 4}, {7, 12}, {1, 1});
+                    texCoords = toTextureCoord({0, 4}, {7, 12});
                     glBindTexture(GL_TEXTURE_2D, outdoorDecorTexture);
                     break;
                 case DecoType::FLOWER:
-                    texCoords = toTextureCoord({0, 10}, {7, 12}, {1, 1});
+                    texCoords = toTextureCoord({0, 10}, {7, 12});
                     glBindTexture(GL_TEXTURE_2D, outdoorDecorTexture);
+                    break;
+                case DecoType::OVEN:
+                    model = glm::scale(model, {3, 3, 1});
+                    texCoords = toTextureCoord({0, 0}, {1, 1});
+                    glBindTexture(GL_TEXTURE_2D, ovenTexture);
+                    break;
+                case DecoType::BRIDGE_HOR:
+                    model = glm::translate(model, {-.5f, -1.f, -0.f});
+                    model = glm::scale(model, {5, 5, 1});
+                    texCoords = toTextureCoord({0, 1}, {9, 4}, {3, 3});
+                    glBindTexture(GL_TEXTURE_2D, bridgeTexture);
+                    break;
+                case DecoType::BRIDGE_VER:
+                    model = glm::translate(model, {-1.f, -0.5f, -0.f});
+                    model = glm::scale(model, {5, 5, 1});
+                    texCoords = toTextureCoord({3, 1}, {9, 4}, {3, 3});
+                    glBindTexture(GL_TEXTURE_2D, bridgeTexture);
                     break;
                 default:
                     renderTile = false;
@@ -611,6 +704,26 @@ struct TileSystem
                 glBufferSubData(GL_ARRAY_BUFFER, 0, 4*sizeof(glm::vec2), &texCoords[0]);
                 render(tileRenderData);
             }
+        }
+
+        {
+            auto pos = registry.get<Pos>(george);
+            auto model = glm::translate(glm::mat4(1.0f), glm::vec3(pos.x - 1.5f, pos.y - 2.f, -0.19f));
+            model = glm::scale(model, {3, 3, 1});
+            texCoords = toTextureCoord({2, 0}, {6, 10});
+            glBindTexture(GL_TEXTURE_2D, playerTexture);
+            setUniform(unlitTextureShader, "model", model);
+            glBufferSubData(GL_ARRAY_BUFFER, 0, 4*sizeof(glm::vec2), &texCoords[0]);
+            render(tileRenderData);
+            
+            pos = registry.get<Pos>(tink);
+            model = glm::translate(glm::mat4(1.0f), glm::vec3(pos.x - 1.5f, pos.y - 2.f, -0.18f));
+            model = glm::scale(model, {3, 3, 1});
+            texCoords = toTextureCoord({0, 0}, {6, 10});
+            glBindTexture(GL_TEXTURE_2D, playerTexture);
+            setUniform(unlitTextureShader, "model", model);
+            glBufferSubData(GL_ARRAY_BUFFER, 0, 4*sizeof(glm::vec2), &texCoords[0]);
+            render(tileRenderData);
         }
         glDisable(GL_DEPTH_TEST);
 
@@ -631,12 +744,14 @@ struct TileSystem
                     selectedTile = tileEntity;
                     selectedPosition = pos;
                 }
-                setUniform(unlitColorShader, "color", selectedTile == tileEntity ? glm::vec4{1.f, 1.f, 0.f, 1.f} : type == TileType::GRASS ? glm::vec4{0.f, 1.f, 0.f, 1.f} : glm::vec4{0.f, 0.f, 0.f, 1.f});
+                setUniform(unlitColorShader, "color", selectedTile == tileEntity ? glm::vec4{1.f, 1.f, 0.f, 1.f} : registry.has<Blocked>(tileEntity) ? glm::vec4{1.f, 0.f, 0.f, 1.f} : glm::vec4{0.f, 0.f, 0.f, 1.f});
                 render(lineRenderData);
             }
         }
+
         glDisable(GL_DEPTH_TEST);
     }
+    GameState& gameState;
     unsigned int unlitColorShader;
     unsigned int unlitTextureShader;
     unsigned int texBuffer;
@@ -647,6 +762,10 @@ struct TileSystem
     unsigned int pathTileTexture;
     unsigned int beachTileTexture;
     unsigned int outdoorDecorTexture;
+    unsigned int ovenTexture;
+    unsigned int vasesTexture;
+    unsigned int playerTexture;
+    unsigned int bridgeTexture;
     GLFWwindow* window;
     unsigned int keyPressed = 0;
     Entity selectedTile = 0;
@@ -654,6 +773,7 @@ struct TileSystem
     TileType selectedTileType;
     RenderData lineRenderData;
     RenderData tileRenderData;
+    Entity tink, george;
 };
 
 struct DialogSystem
@@ -682,7 +802,9 @@ struct MissionSystem
     {
         auto& tinkPos = registry.get<Pos>(tink);
         auto& georgePos = registry.get<Pos>(george);
+        auto& ovenPos = registry.get<glm::ivec2>(oven);
         bool closeToGeorge = glm::length(tinkPos - georgePos) < 4.f;
+        bool closeToOven = glm::length(tinkPos - glm::vec2{ovenPos.x, ovenPos.y}) < 5.f;
         gameState.allowMovement = true;
         if (!isKeyPressed(window, GLFW_KEY_ENTER))
         {
@@ -696,7 +818,7 @@ struct MissionSystem
                     gameState.mission = Missions::CHAT_GEORGE_1;
                 break;
             case Missions::CHAT_GEORGE_1:
-                dialogSystem.dialog = "Hey Tink,\nHave you heard about the lesser pottery throwdown!!?";
+                dialogSystem.dialog = "Hey Tink,\nHave you heard about the lesser pottery throw down!!?";
                 gameState.allowMovement = false;
                 if (isKeyPressed(window, GLFW_KEY_ENTER) && !enterPressed)
                 {
@@ -705,7 +827,7 @@ struct MissionSystem
                 }
                 break;
             case Missions::CHAT_GEORGE_2:
-                dialogSystem.dialog = "You should make a piece as well\nThe jury will love your style!";
+                dialogSystem.dialog = "You should make a piece as well!!\nThe jury will love your style!";
                 gameState.allowMovement = false;
                 if (isKeyPressed(window, GLFW_KEY_ENTER) && !enterPressed)
                 {
@@ -764,6 +886,113 @@ struct MissionSystem
                 }
                 break;
             }
+            case Missions::CHAT_GEORGE_6:
+                dialogSystem.dialog = "How nice! Now you are ready to make your piece!\nWhen ready, go to the oven for the bisque firing! ";
+                gameState.allowMovement = false;
+                if (isKeyPressed(window, GLFW_KEY_ENTER) && !enterPressed)
+                {
+                    enterPressed = true;
+                    gameState.mission = Missions::BAKE_PIECE;
+                }
+                break;
+            case Missions::BAKE_PIECE:
+                dialogSystem.dialog = "\nGo to the oven for the bisque firing";
+                if (closeToOven)
+                {
+                    gameState.mission = Missions::BAKE_PIECE_HAND_IN;
+                }
+                break;
+            case Missions::BAKE_PIECE_HAND_IN:
+                dialogSystem.dialog = "\nShow your piece to George";
+                if (closeToGeorge)
+                {
+                    gameState.mission = Missions::CHAT_GEORGE_7;
+                }
+                break;
+            case Missions::CHAT_GEORGE_7:
+                dialogSystem.dialog = "Wow, look at that!\nYou are ready for the glazing!";
+                gameState.allowMovement = false;
+                if (isKeyPressed(window, GLFW_KEY_ENTER) && !enterPressed)
+                {
+                    enterPressed = true;
+                    gameState.mission = Missions::CHAT_GEORGE_8;
+                }
+                break;
+            case Missions::CHAT_GEORGE_8:
+                dialogSystem.dialog = "Now go get some wood and glaze materials.\nYou can find the material on the island up north.";
+                gameState.allowMovement = false;
+                if (isKeyPressed(window, GLFW_KEY_ENTER) && !enterPressed)
+                {
+                    enterPressed = true;
+                    gameState.mission = Missions::GATHER_WOOD_AND_GLAZE;
+                }
+                break;
+            case Missions::GATHER_WOOD_AND_GLAZE:
+            {
+                std::stringstream ss;
+                ss << "Wood gathered: " << gameState.woodGathered << "/5\nGlaze materials gathered: " << gameState.glazeGathered << "/5" << std::endl;
+                dialogSystem.dialog = ss.str();
+                if (gameState.woodGathered >= 5 && gameState.glazeGathered >= 5 && closeToGeorge)
+                {
+                    gameState.clayGathered = 0;
+                    gameState.mission = Missions::CHAT_GEORGE_9;
+                }
+                break;
+            }
+            case Missions::CHAT_GEORGE_9:
+                dialogSystem.dialog = "Alright, let me make a nice glaze out of these materials.\nHere you go, now apply the glaze and get ready for the final firing!";
+                gameState.allowMovement = false;
+                if (isKeyPressed(window, GLFW_KEY_ENTER) && !enterPressed)
+                {
+                    enterPressed = true;
+                    gameState.mission = Missions::GLAZE_PIECE;
+                }
+                break;
+            case Missions::GLAZE_PIECE:
+                dialogSystem.dialog = "\nGo to the oven for the glaze firing";
+                if (closeToOven)
+                {
+                    gameState.mission = Missions::GLAZE_PIECE_HAND_IN;
+                }
+                break;
+            case Missions::GLAZE_PIECE_HAND_IN:
+                dialogSystem.dialog = "\nShow your piece to George";
+                if (closeToGeorge)
+                {
+                    gameState.mission = Missions::SHOW_GEORGE;
+                }
+                break;
+            case Missions::SHOW_GEORGE:
+                dialogSystem.dialog = "Wow, look at that!\nThat looks amazing!!";
+                gameState.allowMovement = false;
+                if (isKeyPressed(window, GLFW_KEY_ENTER) && !enterPressed)
+                {
+                    enterPressed = true;
+                    gameState.mission = Missions::CHAT_GEORGE_JURY;
+                }
+                break;
+            case Missions::CHAT_GEORGE_JURY:
+                dialogSystem.dialog = "...The jury?? The two of us already look the same.\nAdding a third character with the same sprite is weird...";
+                gameState.allowMovement = false;
+                if (isKeyPressed(window, GLFW_KEY_ENTER) && !enterPressed)
+                {
+                    enterPressed = true;
+                    gameState.mission = Missions::CHAT_GEORGE_YOU_WON;
+                }
+                break;
+            case Missions::CHAT_GEORGE_YOU_WON:
+                dialogSystem.dialog = "I AM THE JURY-MENEER!!\nAnd you won the lesser pottery throw down!! Congratz!";
+                gameState.allowMovement = false;
+                if (isKeyPressed(window, GLFW_KEY_ENTER) && !enterPressed)
+                {
+                    enterPressed = true;
+                    gameState.mission = Missions::END;
+                }
+                break;
+            case Missions::END:
+                dialogSystem.dialog = "\nPress F2 if you want to play again.";
+                gameState.allowMovement = false;
+                break;
             default:
                 dialogSystem.dialog = "";
                 break;
@@ -773,6 +1002,7 @@ struct MissionSystem
     DialogSystem& dialogSystem;
     Entity tink;
     Entity george;
+    Entity oven;
     GLFWwindow* window;
     bool enterPressed = false;
 };
@@ -781,7 +1011,7 @@ struct WoodGatheringSystem
 {
     void run(Registry &registry, float deltaTime)
     {
-        if ((gameState.mission != Missions::GATHER_WOOD && gameState.mission != Missions::GATHER_WOOD_2) || gameState.woodGathered >= 5)
+        if ((gameState.mission != Missions::GATHER_WOOD && gameState.mission != Missions::GATHER_WOOD_AND_GLAZE) || gameState.woodGathered >= 5)
             return;
         auto& tinkPos = registry.get<Pos>(tink);
         auto tiles = registry.each<DecoType>();
@@ -827,7 +1057,7 @@ struct GlazeGatheringSystem
 {
     void run(Registry &registry, float deltaTime)
     {
-        if (gameState.mission != Missions::GATHER_GLAZE || gameState.glazeGathered >= 5)
+        if (gameState.mission != Missions::GATHER_WOOD_AND_GLAZE || gameState.glazeGathered >= 5)
             return;
         auto& tinkPos = registry.get<Pos>(tink);
         auto tiles = registry.each<DecoType>();

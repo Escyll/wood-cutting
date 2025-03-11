@@ -26,6 +26,10 @@ int main(int argc, char *argv[])
     auto pathTileTexture = loadTexture("assets/textures/Cute_Fantasy_Free/Tiles/Path_Tile.png");
     auto beachTileTexture = loadTexture("assets/textures/Cute_Fantasy_Free/Tiles/Beach_Tile.png");
     auto outdoorDecorTexture = loadTexture("assets/textures/Cute_Fantasy_Free/Outdoor decoration/Outdoor_Decor_Free.png");
+    auto bridgeTexture = loadTexture("assets/textures/Cute_Fantasy_Free/Outdoor decoration/Bridge_Wood.png");
+    auto ovenTexture = loadTexture("assets/textures/Oven.png");
+    auto vasesTexture = loadTexture("assets/textures/vases.png");
+    auto playerTexture = loadTexture("assets/textures/Cute_Fantasy_Free/Player/Player.png");
 
     auto unlitColorVertex = readFile("assets/shaders/unlit-color/vertex.glsl");
     auto unlitColorFragment = readFile("assets/shaders/unlit-color/fragment.glsl");
@@ -35,8 +39,6 @@ int main(int argc, char *argv[])
     auto unlitColorShader = createShaderProgram(unlitColorVertex.c_str(), unlitColorFragment.c_str());
     auto unlitTextureShader = createShaderProgram(unlitTextureVertex.c_str(), unlitTextureFragment.c_str());
 
-    BufferData circleBuffer = bufferData(createCircleVertices(0.5f, 50));
-    BufferData tinkBuffer = bufferData(createCircleVertices(0.5f, 50));
     BufferData tileBuffer = bufferData(createRectangleVertices(1.f, 1.f));
     BufferData tileTexBuffer = bufferData({{0.0, 0.0}, {1.0, 0.0}, {1.0, 1.0}, {0.1, 1.0}});
     BufferData rectangleIndexBuffer = bufferIndexData({0,1,2,2,3,0});
@@ -44,7 +46,6 @@ int main(int argc, char *argv[])
     BufferData charPosBuffer = bufferData(createRectangleVertices(font.common.lineHeight, font.common.lineHeight));
     BufferData charTexBuffer = bufferData({{0.2, 0.2}, {0.2, 0.5}, {0.5, 0.5}, {0.5, 0.2}});
 
-    auto tinkVAO = createPosVAO(tinkBuffer.handle);
     auto tileLineVAO = createPosVAO(tileBuffer.handle, rectangleLineIndexBuffer.handle);
     auto tileVAO = createPosTexVAO(tileBuffer.handle, tileTexBuffer.handle, rectangleIndexBuffer.handle);
     auto charVAO = createPosTexVAO(charPosBuffer.handle, charTexBuffer.handle, rectangleIndexBuffer.handle);
@@ -52,9 +53,12 @@ int main(int argc, char *argv[])
     RenderData tileRenderData { tileVAO, rectangleIndexBuffer.elementCount, GL_TRIANGLES, DrawStrategy::ELEMENTS };
     RenderData tileLineRenderData { tileLineVAO, rectangleLineIndexBuffer.elementCount, GL_LINES, DrawStrategy::ELEMENTS };
 
+    GameState gameState;
+    gameState.mission = Missions::START;
+
     RenderSystem renderSystem;
     renderSystem.shaderID = unlitColorShader;
-    TileSystem tileSystem;
+    TileSystem tileSystem { gameState };
     tileSystem.unlitColorShader = unlitColorShader;
     tileSystem.unlitTextureShader = unlitTextureShader;
     tileSystem.texBuffer = tileTexBuffer.handle;
@@ -68,21 +72,22 @@ int main(int argc, char *argv[])
     tileSystem.lineRenderData = tileLineRenderData;
     tileSystem.tileRenderData = tileRenderData;
     tileSystem.outdoorDecorTexture = outdoorDecorTexture;
+    tileSystem.ovenTexture = ovenTexture;
+    tileSystem.vasesTexture = vasesTexture;
+    tileSystem.playerTexture = playerTexture;
+    tileSystem.bridgeTexture = bridgeTexture;
 
     Registry registry;
     Entity tink = registry.create();
     Entity george = registry.create();
+    Entity oven = registry.create();
+    
+    tileSystem.tink = tink;
+    tileSystem.george = george;
 
     registry.insert<Pos>(tink, Pos{25, 20});
-    registry.insert<Color>(tink, Color{1.0, 0.2, 0.3, 1.0});
-    registry.insert<RenderData>(tink, {tinkVAO, circleBuffer.elementCount, GL_TRIANGLE_FAN});
-
     registry.insert<Pos>(george, Pos{18, 7});
-    registry.insert<Color>(george, Color{0.2, 0.2, 1.0, 1.0});
-    registry.insert<RenderData>(george, {tinkVAO, circleBuffer.elementCount, GL_TRIANGLE_FAN});
-
-    GameState gameState;
-    gameState.mission = Missions::START;
+    registry.insert<glm::ivec2>(oven, {30, 30});
 
     MovementSystem movementSystem { gameState };
     movementSystem.tink = tink;
@@ -98,7 +103,10 @@ int main(int argc, char *argv[])
     MissionSystem missionSystem { gameState, dialogSystem };
     missionSystem.tink = tink;
     missionSystem.george = george;
+    missionSystem.oven = oven;
     missionSystem.window = window;
+    
+    loadLevel(registry);
 
     glfwSwapInterval(1);
     auto previousFrame = 0.f;
