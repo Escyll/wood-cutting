@@ -9,6 +9,7 @@ add_executable(wood-cutting)
 
 target_sources(wood-cutting PRIVATE
     main.cpp
+    Catalog.h
     Geometry.h
     ECS/ECS.h
     ECS/Systems/Systems.h

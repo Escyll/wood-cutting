@@ -9,6 +9,7 @@
 #include "Renderer/Shaders.h"
 #include "Renderer/Textures.h"
 #include "Geometry.h"
+#include "Catalog.h"
 #include "FontRendering/BMFont.h"
 
 int main(int argc, char *argv[])
@@ -17,19 +18,9 @@ int main(int argc, char *argv[])
     if (not window)
         return -1;
 
+    auto textureCatalog = createTextureCatalog("assets/textures");
+    auto fontTextureCatalog = createTextureCatalog("assets/fonts");
     auto font = loadBMFont("assets/fonts/ComicSans80/ComicSans80.fnt");
-    auto comicSansTexture = loadTexture("assets/fonts/ComicSans80/ComicSans80_0.png");
-    auto grassTexture = loadTexture("assets/textures/Cute_Fantasy_Free/Tiles/Grass_Middle.png");
-    auto waterTexture = loadTexture("assets/textures/Cute_Fantasy_Free/Tiles/Water_Middle.png");
-    auto waterTileTexture = loadTexture("assets/textures/Cute_Fantasy_Free/Tiles/Water_Tile.png");
-    auto pathTexture = loadTexture("assets/textures/Cute_Fantasy_Free/Tiles/Path_Middle.png");
-    auto pathTileTexture = loadTexture("assets/textures/Cute_Fantasy_Free/Tiles/Path_Tile.png");
-    auto beachTileTexture = loadTexture("assets/textures/Cute_Fantasy_Free/Tiles/Beach_Tile.png");
-    auto outdoorDecorTexture = loadTexture("assets/textures/Cute_Fantasy_Free/Outdoor decoration/Outdoor_Decor_Free.png");
-    auto bridgeTexture = loadTexture("assets/textures/Cute_Fantasy_Free/Outdoor decoration/Bridge_Wood.png");
-    auto ovenTexture = loadTexture("assets/textures/Oven.png");
-    auto vasesTexture = loadTexture("assets/textures/vases.png");
-    auto playerTexture = loadTexture("assets/textures/Cute_Fantasy_Free/Player/Player.png");
 
     auto unlitColorVertex = readFile("assets/shaders/unlit-color/vertex.glsl");
     auto unlitColorFragment = readFile("assets/shaders/unlit-color/fragment.glsl");
@@ -58,24 +49,13 @@ int main(int argc, char *argv[])
 
     RenderSystem renderSystem;
     renderSystem.shaderID = unlitColorShader;
-    TileSystem tileSystem { gameState };
+    TileSystem tileSystem { gameState, textureCatalog };
     tileSystem.unlitColorShader = unlitColorShader;
     tileSystem.unlitTextureShader = unlitTextureShader;
     tileSystem.texBuffer = tileTexBuffer.handle;
-    tileSystem.grassTexture = grassTexture;
-    tileSystem.waterTexture = waterTexture;
-    tileSystem.waterTileTexture = waterTileTexture;
-    tileSystem.pathTexture = pathTexture;
-    tileSystem.pathTileTexture = pathTileTexture;
-    tileSystem.beachTileTexture = beachTileTexture;
     tileSystem.window = window;
     tileSystem.lineRenderData = tileLineRenderData;
     tileSystem.tileRenderData = tileRenderData;
-    tileSystem.outdoorDecorTexture = outdoorDecorTexture;
-    tileSystem.ovenTexture = ovenTexture;
-    tileSystem.vasesTexture = vasesTexture;
-    tileSystem.playerTexture = playerTexture;
-    tileSystem.bridgeTexture = bridgeTexture;
 
     Registry registry;
     Entity tink = registry.create();
@@ -95,10 +75,9 @@ int main(int argc, char *argv[])
     WoodGatheringSystem woodGatheringSystem{tink, gameState};
     ClayGatheringSystem clayGatheringSystem{tink, gameState};
     GlazeGatheringSystem glazeGatheringSystem{tink, gameState};
-    DialogSystem dialogSystem { font };
+    DialogSystem dialogSystem { font, fontTextureCatalog };
     dialogSystem.unlitTextureShader = unlitTextureShader;
     dialogSystem.charTexBuffer = charTexBuffer.handle;
-    dialogSystem.comicSansTexture = comicSansTexture;
     dialogSystem.charRenderData = charRenderData;
     MissionSystem missionSystem { gameState, dialogSystem };
     missionSystem.tink = tink;
@@ -108,7 +87,7 @@ int main(int argc, char *argv[])
     
     loadLevel(registry);
 
-    glfwSwapInterval(1);
+    //glfwSwapInterval(1);
     auto previousFrame = 0.f;
     while (!glfwWindowShouldClose(window))
     {

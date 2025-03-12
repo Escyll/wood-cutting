@@ -8,6 +8,7 @@
 
 #include "ECS/ECS.h"
 #include "Renderer/Renderer.h"
+#include "Catalog.h"
 
 using Color = glm::vec4;
 using Pos = glm::vec2;
@@ -554,7 +555,6 @@ struct TileSystem
         setUniform(unlitColorShader, "texture1", 0);
         glActiveTexture(GL_TEXTURE0);
         glBindBuffer(GL_ARRAY_BUFFER, texBuffer);
-
         glEnable(GL_DEPTH_TEST);
         std::array<glm::vec2, 4> texCoords;
         for (auto [tileEntity, pos, type]: registry.each<glm::ivec2, TileType>())
@@ -566,87 +566,87 @@ struct TileSystem
             {
                 case TileType::GRASS:
                     texCoords = toTextureCoord({0, 0}, {1, 1});
-                    glBindTexture(GL_TEXTURE_2D, grassTexture);
+                    glBindTexture(GL_TEXTURE_2D, getTexture(textureCatalog, "Cute_Fantasy_Free/Tiles/Grass_Middle.png"));
                     break;
                 case TileType::WATER:
                     texCoords = toTextureCoord({0, 0}, {1, 1});
-                    glBindTexture(GL_TEXTURE_2D, waterTexture);
+                    glBindTexture(GL_TEXTURE_2D, getTexture(textureCatalog, "Cute_Fantasy_Free/Tiles/Water_Middle.png"));
                     break;
                 case TileType::PATH:
                     texCoords = toTextureCoord({0, 0}, {1, 1});
-                    glBindTexture(GL_TEXTURE_2D, pathTexture);
+                    glBindTexture(GL_TEXTURE_2D, getTexture(textureCatalog, "Cute_Fantasy_Free/Tiles/Path_Middle.png"));
                     break;
                 case TileType::CLAY:
                     texCoords = toTextureCoord({2, 5}, {3, 6});
-                    glBindTexture(GL_TEXTURE_2D, pathTileTexture);
+                    glBindTexture(GL_TEXTURE_2D, getTexture(textureCatalog, "Cute_Fantasy_Free/Tiles/Path_Tile.png"));
                     break;
                 case TileType::GRASS_WATER_NW:
                     texCoords = toTextureCoord({0, 3}, {3, 6});
-                    glBindTexture(GL_TEXTURE_2D, waterTileTexture);
+                    glBindTexture(GL_TEXTURE_2D, getTexture(textureCatalog, "Cute_Fantasy_Free/Tiles/Water_Tile.png"));
                     break;
                 case TileType::GRASS_WATER_N:
                     texCoords = toTextureCoord({1, 2}, {3, 6});
-                    glBindTexture(GL_TEXTURE_2D, waterTileTexture);
+                    glBindTexture(GL_TEXTURE_2D, getTexture(textureCatalog, "Cute_Fantasy_Free/Tiles/Water_Tile.png"));
                     break;
                 case TileType::GRASS_WATER_NE:
                     texCoords = toTextureCoord({1, 3}, {3, 6});
-                    glBindTexture(GL_TEXTURE_2D, waterTileTexture);
+                    glBindTexture(GL_TEXTURE_2D, getTexture(textureCatalog, "Cute_Fantasy_Free/Tiles/Water_Tile.png"));
                     break;
                 case TileType::GRASS_WATER_E:
                     texCoords = toTextureCoord({0, 1}, {3, 6});
-                    glBindTexture(GL_TEXTURE_2D, waterTileTexture);
+                    glBindTexture(GL_TEXTURE_2D, getTexture(textureCatalog, "Cute_Fantasy_Free/Tiles/Water_Tile.png"));
                     break;
                 case TileType::WATER_GRASS_SE:
                     texCoords = toTextureCoord({2, 2}, {3, 6});
-                    glBindTexture(GL_TEXTURE_2D, waterTileTexture);
+                    glBindTexture(GL_TEXTURE_2D, getTexture(textureCatalog, "Cute_Fantasy_Free/Tiles/Water_Tile.png"));
                     break;
                 case TileType::WATER_GRASS_SW:
                     texCoords = toTextureCoord({0, 2}, {3, 6});
-                    glBindTexture(GL_TEXTURE_2D, waterTileTexture);
+                    glBindTexture(GL_TEXTURE_2D, getTexture(textureCatalog, "Cute_Fantasy_Free/Tiles/Water_Tile.png"));
                     break;
                 case TileType::PATH_WATER_W:
                     texCoords = toTextureCoord({0, 1}, {5, 3});
-                    glBindTexture(GL_TEXTURE_2D, beachTileTexture);
+                    glBindTexture(GL_TEXTURE_2D, getTexture(textureCatalog, "Cute_Fantasy_Free/Tiles/Beach_Tile.png"));
                     break;
                 case TileType::PATH_WATER_E:
                     texCoords = toTextureCoord({2, 1}, {5, 3});
-                    glBindTexture(GL_TEXTURE_2D, beachTileTexture);
+                    glBindTexture(GL_TEXTURE_2D, getTexture(textureCatalog, "Cute_Fantasy_Free/Tiles/Beach_Tile.png"));
                     break;
                 case TileType::PATH_WATER_SE:
                     texCoords = toTextureCoord({2, 2}, {5, 3});
-                    glBindTexture(GL_TEXTURE_2D, beachTileTexture);
+                    glBindTexture(GL_TEXTURE_2D, getTexture(textureCatalog, "Cute_Fantasy_Free/Tiles/Beach_Tile.png"));
                     break;
                 case TileType::PATH_WATER_S:
                     texCoords = toTextureCoord({1, 2}, {5, 3});
-                    glBindTexture(GL_TEXTURE_2D, beachTileTexture);
+                    glBindTexture(GL_TEXTURE_2D, getTexture(textureCatalog, "Cute_Fantasy_Free/Tiles/Beach_Tile.png"));
                     break;
                 case TileType::PATH_WATER_SW:
                     texCoords = toTextureCoord({0, 2}, {5, 3});
-                    glBindTexture(GL_TEXTURE_2D, beachTileTexture);
+                    glBindTexture(GL_TEXTURE_2D, getTexture(textureCatalog, "Cute_Fantasy_Free/Tiles/Beach_Tile.png"));
                     break;
                 case TileType::WATER_PATH_NE:
                     texCoords = toTextureCoord({4, 0}, {5, 3});
-                    glBindTexture(GL_TEXTURE_2D, beachTileTexture);
+                    glBindTexture(GL_TEXTURE_2D, getTexture(textureCatalog, "Cute_Fantasy_Free/Tiles/Beach_Tile.png"));
                     break;
                 case TileType::WATER_PATH_NW:
                     texCoords = toTextureCoord({3, 0}, {5, 3});
-                    glBindTexture(GL_TEXTURE_2D, beachTileTexture);
+                    glBindTexture(GL_TEXTURE_2D, getTexture(textureCatalog, "Cute_Fantasy_Free/Tiles/Beach_Tile.png"));
                     break;
                 case TileType::PATH_GRASS_NE:
                     texCoords = toTextureCoord({2, 0}, {3, 6});
-                    glBindTexture(GL_TEXTURE_2D, pathTileTexture);
+                    glBindTexture(GL_TEXTURE_2D, getTexture(textureCatalog, "Cute_Fantasy_Free/Tiles/Path_Tile.png"));
                     break;
                 case TileType::GRASS_PATH_W:
                     texCoords = toTextureCoord({2, 1}, {3, 6});
-                    glBindTexture(GL_TEXTURE_2D, pathTileTexture);
+                    glBindTexture(GL_TEXTURE_2D, getTexture(textureCatalog, "Cute_Fantasy_Free/Tiles/Path_Tile.png"));
                     break;
                 case TileType::GRASS_PATH_SW:
                     texCoords = toTextureCoord({0, 4}, {3, 6});
-                    glBindTexture(GL_TEXTURE_2D, pathTileTexture);
+                    glBindTexture(GL_TEXTURE_2D, getTexture(textureCatalog, "Cute_Fantasy_Free/Tiles/Path_Tile.png"));
                     break;
                 case TileType::GRASS_PATH_S:
                     texCoords = toTextureCoord({1, 0}, {3, 6});
-                    glBindTexture(GL_TEXTURE_2D, pathTileTexture);
+                    glBindTexture(GL_TEXTURE_2D, getTexture(textureCatalog, "Cute_Fantasy_Free/Tiles/Path_Tile.png"));
                     break;
                 default:
                     renderTile = false;
@@ -667,32 +667,32 @@ struct TileSystem
                 case DecoType::WOOD:
                     model = glm::scale(model, {2, 1, 1});
                     texCoords = toTextureCoord({0, 7}, {7, 12}, {2, 1});
-                    glBindTexture(GL_TEXTURE_2D, outdoorDecorTexture);
+                    glBindTexture(GL_TEXTURE_2D, getTexture(textureCatalog, "Cute_Fantasy_Free/Outdoor decoration/Outdoor_Decor_Free.png"));
                     break;
                 case DecoType::GLAZE:
                     texCoords = toTextureCoord({0, 4}, {7, 12});
-                    glBindTexture(GL_TEXTURE_2D, outdoorDecorTexture);
+                    glBindTexture(GL_TEXTURE_2D, getTexture(textureCatalog, "Cute_Fantasy_Free/Outdoor decoration/Outdoor_Decor_Free.png"));
                     break;
                 case DecoType::FLOWER:
                     texCoords = toTextureCoord({0, 10}, {7, 12});
-                    glBindTexture(GL_TEXTURE_2D, outdoorDecorTexture);
+                    glBindTexture(GL_TEXTURE_2D, getTexture(textureCatalog, "Cute_Fantasy_Free/Outdoor decoration/Outdoor_Decor_Free.png"));
                     break;
                 case DecoType::OVEN:
                     model = glm::scale(model, {3, 3, 1});
                     texCoords = toTextureCoord({0, 0}, {1, 1});
-                    glBindTexture(GL_TEXTURE_2D, ovenTexture);
+                    glBindTexture(GL_TEXTURE_2D, getTexture(textureCatalog, "Oven.png"));
                     break;
                 case DecoType::BRIDGE_HOR:
                     model = glm::translate(model, {-.5f, -1.f, -0.f});
                     model = glm::scale(model, {5, 5, 1});
                     texCoords = toTextureCoord({0, 1}, {9, 4}, {3, 3});
-                    glBindTexture(GL_TEXTURE_2D, bridgeTexture);
+                    glBindTexture(GL_TEXTURE_2D, getTexture(textureCatalog, "Cute_Fantasy_Free/Outdoor decoration/Bridge_Wood.png"));
                     break;
                 case DecoType::BRIDGE_VER:
                     model = glm::translate(model, {-1.f, -0.5f, -0.f});
                     model = glm::scale(model, {5, 5, 1});
                     texCoords = toTextureCoord({3, 1}, {9, 4}, {3, 3});
-                    glBindTexture(GL_TEXTURE_2D, bridgeTexture);
+                    glBindTexture(GL_TEXTURE_2D, getTexture(textureCatalog, "Cute_Fantasy_Free/Outdoor decoration/Bridge_Wood.png"));
                     break;
                 default:
                     renderTile = false;
@@ -711,7 +711,7 @@ struct TileSystem
             auto model = glm::translate(glm::mat4(1.0f), glm::vec3(pos.x - 1.5f, pos.y - 2.f, -0.19f));
             model = glm::scale(model, {3, 3, 1});
             texCoords = toTextureCoord({2, 0}, {6, 10});
-            glBindTexture(GL_TEXTURE_2D, playerTexture);
+            glBindTexture(GL_TEXTURE_2D, getTexture(textureCatalog, "Cute_Fantasy_Free/Player/Player.png"));
             setUniform(unlitTextureShader, "model", model);
             glBufferSubData(GL_ARRAY_BUFFER, 0, 4*sizeof(glm::vec2), &texCoords[0]);
             render(tileRenderData);
@@ -720,7 +720,7 @@ struct TileSystem
             model = glm::translate(glm::mat4(1.0f), glm::vec3(pos.x - 1.5f, pos.y - 2.f, -0.18f));
             model = glm::scale(model, {3, 3, 1});
             texCoords = toTextureCoord({0, 0}, {6, 10});
-            glBindTexture(GL_TEXTURE_2D, playerTexture);
+            glBindTexture(GL_TEXTURE_2D, getTexture(textureCatalog, "Cute_Fantasy_Free/Player/Player.png"));
             setUniform(unlitTextureShader, "model", model);
             glBufferSubData(GL_ARRAY_BUFFER, 0, 4*sizeof(glm::vec2), &texCoords[0]);
             render(tileRenderData);
@@ -752,20 +752,10 @@ struct TileSystem
         glDisable(GL_DEPTH_TEST);
     }
     GameState& gameState;
+    TextureCatalog& textureCatalog;
     unsigned int unlitColorShader;
     unsigned int unlitTextureShader;
     unsigned int texBuffer;
-    unsigned int grassTexture;
-    unsigned int waterTexture;
-    unsigned int waterTileTexture;
-    unsigned int pathTexture;
-    unsigned int pathTileTexture;
-    unsigned int beachTileTexture;
-    unsigned int outdoorDecorTexture;
-    unsigned int ovenTexture;
-    unsigned int vasesTexture;
-    unsigned int playerTexture;
-    unsigned int bridgeTexture;
     GLFWwindow* window;
     unsigned int keyPressed = 0;
     Entity selectedTile = 0;
@@ -786,9 +776,11 @@ struct DialogSystem
         projection = glm::translate(projection, glm::vec3(position.x, position.y, 0.f));
         projection = glm::scale(projection, glm::vec3(0.5f, 0.5f, 1.f));
         setUniform(unlitTextureShader, "projection", projection);
+        auto comicSansTexture = getTexture(fontTextureCatalog, "ComicSans80/ComicSans80_0.png");
         renderText(dialog, font, charTexBuffer, unlitTextureShader, comicSansTexture, 1.f / 1080.f, font.common.lineHeight, charRenderData);
     }
     BMFont& font;
+    TextureCatalog& fontTextureCatalog;
     unsigned int unlitTextureShader;
     unsigned int charTexBuffer;
     unsigned int comicSansTexture;

@@ -6,10 +6,8 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
-unsigned int loadTexture(const std::string& path)
+bool loadTexture(const std::string& path, unsigned int& texture)
 {
-    std::cerr << "Loading texture " << path << std::endl;
-    unsigned int texture;
     glGenTextures(1, &texture);
     glBindTexture(GL_TEXTURE_2D, texture); // all upcoming GL_TEXTURE_2D operations now have effect on this texture object
     // set the texture wrapping parameters
@@ -31,10 +29,10 @@ unsigned int loadTexture(const std::string& path)
     else
     {
         std::cerr << "Failed to load texture" << std::endl;
+        return false;
     }
     stbi_image_free(data);
-    std::cerr << "Done loading texture" << std::endl;
-    return texture;
+    return true;
 }
 
 #endif
