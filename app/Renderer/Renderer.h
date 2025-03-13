@@ -165,11 +165,6 @@ void processInput(GLFWwindow* window)
     }
 }
 
-bool isKeyPressed(GLFWwindow* window, int key)
-{
-    return glfwGetKey(window, key) == GLFW_PRESS;
-}
-
 [[nodiscard]] GLFWwindow* initializeOpenGLAndCreateWindow()
 {
     glfwInit();

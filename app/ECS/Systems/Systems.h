@@ -7,6 +7,7 @@
 #include <sstream>
 
 #include "ECS/ECS.h"
+#include "ECS/Systems/InputSystem.h"
 #include "Renderer/Renderer.h"
 #include "Catalog.h"
 
@@ -139,19 +140,19 @@ struct MovementSystem
             return;
         auto& pos = registry.get<Pos>(tink);
         glm::vec2 displacement {0.f, 0.f};
-        if (isKeyPressed(window, GLFW_KEY_W))
+        if (isHolded(GLFW_KEY_W))
         {
             displacement.y -= 1;
         }
-        if (isKeyPressed(window, GLFW_KEY_S))
+        if (isHolded(GLFW_KEY_S))
         {
             displacement.y += 1;
         }
-        if (isKeyPressed(window, GLFW_KEY_A))
+        if (isHolded(GLFW_KEY_A))
         {
             displacement.x -= 1;
         }
-        if (isKeyPressed(window, GLFW_KEY_D))
+        if (isHolded(GLFW_KEY_D))
         {
             displacement.x += 1;
         }
@@ -169,7 +170,6 @@ struct MovementSystem
     }
     GameState& gameState;
     float speed = 4.f;
-    GLFWwindow* window;
     Entity tink;
 };
 
@@ -289,35 +289,29 @@ struct TileSystem
 
     void run(Registry &registry, float deltaTime)
     {
-        if (isKeyPressed(window, GLFW_KEY_RIGHT) && keyPressed == 0 && editing)
+        if (isPressedOrRepeated(GLFW_KEY_RIGHT) && editing)
         {
-            keyPressed = GLFW_KEY_RIGHT;
             selectTile({selectedPosition.x + 1, selectedPosition.y}, registry);
         }
-        else if (isKeyPressed(window, GLFW_KEY_LEFT) && keyPressed == 0 && editing)
+        else if (isPressedOrRepeated(GLFW_KEY_LEFT) && editing)
         {
-            keyPressed = GLFW_KEY_LEFT;
             selectTile({selectedPosition.x - 1, selectedPosition.y}, registry);
         }
-        else if (isKeyPressed(window, GLFW_KEY_UP) && keyPressed == 0 && editing)
+        else if (isPressedOrRepeated(GLFW_KEY_UP) && editing)
         {
-            keyPressed = GLFW_KEY_UP;
             selectTile({selectedPosition.x, selectedPosition.y - 1}, registry);
         }
-        else if (isKeyPressed(window, GLFW_KEY_DOWN) && keyPressed == 0 && editing)
+        else if (isPressedOrRepeated(GLFW_KEY_DOWN) && editing)
         {
-            keyPressed = GLFW_KEY_DOWN;
             selectTile({selectedPosition.x, selectedPosition.y + 1}, registry);
         }
-        else if (isKeyPressed(window, GLFW_KEY_E) && keyPressed == 0)
+        else if (isPressed(GLFW_KEY_E))
         {
-            keyPressed = GLFW_KEY_E;
             editing = !editing;
         }
-        else if (isKeyPressed(window, GLFW_KEY_S) && keyPressed == 0 && editing)
+        else if (isPressed(GLFW_KEY_S) && editing)
         {
             std::cerr << "Saving level" << std::endl;
-            keyPressed = GLFW_KEY_S;
             std::ofstream wf("assets/levels/level.dat", std::ios::out | std::ios::binary);
             auto tiles = registry.each<glm::ivec2, TileType>();
             uint32_t count = tiles.size();
@@ -345,90 +339,75 @@ struct TileSystem
             wf.close();
             std::cerr << "Level saved" << std::endl;
         }
-        else if (isKeyPressed(window, GLFW_KEY_L) && keyPressed == 0 && editing)
+        else if (isPressed(GLFW_KEY_L) && editing)
         {
-            keyPressed = GLFW_KEY_L;
             loadLevel(registry);
         }
-        else if (isKeyPressed(window, GLFW_KEY_F2) && keyPressed == 0)
+        else if (isPressed(GLFW_KEY_F2))
         {
-            keyPressed = GLFW_KEY_F2;
             loadLevel(registry);
             gameState = GameState{};
             registry.replace<Pos>(tink, {25, 20});
         }
-        else if (isKeyPressed(window, GLFW_KEY_F1) && keyPressed == 0 && editing)
+        else if (isPressed(GLFW_KEY_F1) && editing)
         {
-            keyPressed = GLFW_KEY_F1;
             for (auto [tileEntity, _]: registry.each<TileType>())
             {
                 registry.replace<TileType>(tileEntity, TileType::GRASS);
             }
         }
-        else if (isKeyPressed(window, GLFW_KEY_G) && keyPressed == 0 && editing)
+        else if (isPressed(GLFW_KEY_G) && editing)
         {
-            keyPressed = GLFW_KEY_G;
             registry.replace<TileType>(selectedTile, TileType::GRASS);
         }
-        else if (isKeyPressed(window, GLFW_KEY_W) && keyPressed == 0 && editing)
+        else if (isPressed(GLFW_KEY_W) && editing)
         {
-            keyPressed = GLFW_KEY_W;
             registry.replace<TileType>(selectedTile, TileType::WATER);
         }
-        else if (isKeyPressed(window, GLFW_KEY_P) && keyPressed == 0 && editing)
+        else if (isPressed(GLFW_KEY_P) && editing)
         {
-            keyPressed = GLFW_KEY_P;
             registry.replace<TileType>(selectedTile, TileType::PATH);;
         }
-        else if (isKeyPressed(window, GLFW_KEY_C) && keyPressed == 0 && editing)
+        else if (isPressed(GLFW_KEY_C) && editing)
         {
-            keyPressed = GLFW_KEY_C;
             registry.replace<TileType>(selectedTile, TileType::CLAY);
         }
-        else if (isKeyPressed(window, GLFW_KEY_B) && keyPressed == 0 && editing)
+        else if (isPressed(GLFW_KEY_B) && editing)
         {
-            keyPressed = GLFW_KEY_B;
-            bool shifted = isKeyPressed(window, GLFW_KEY_LEFT_SHIFT) || isKeyPressed(window, GLFW_KEY_RIGHT_SHIFT);
+            bool shifted = isPressed(GLFW_KEY_LEFT_SHIFT) || isPressed(GLFW_KEY_RIGHT_SHIFT);
             if (shifted)
                 registry.remove<Blocked>(selectedTile);
             else
                 registry.insert_or_replace<Blocked>(selectedTile, {});
         }
-        else if (isKeyPressed(window, GLFW_KEY_1) && keyPressed == 0 && editing)
+        else if (isPressed(GLFW_KEY_1) && editing)
         {
-            keyPressed = GLFW_KEY_1;
             registry.insert_or_replace<DecoType>(selectedTile, DecoType::WOOD);
         }
-        else if (isKeyPressed(window, GLFW_KEY_2) && keyPressed == 0 && editing)
+        else if (isPressed(GLFW_KEY_2) && editing)
         {
-            keyPressed = GLFW_KEY_2;
             registry.insert_or_replace<DecoType>(selectedTile, DecoType::GLAZE);
         }
-        else if (isKeyPressed(window, GLFW_KEY_3) && keyPressed == 0 && editing)
+        else if (isPressed(GLFW_KEY_3) && editing)
         {
-            keyPressed = GLFW_KEY_3;
             registry.insert_or_replace<DecoType>(selectedTile, DecoType::FLOWER);
         }
-        else if (isKeyPressed(window, GLFW_KEY_4) && keyPressed == 0 && editing)
+        else if (isPressed(GLFW_KEY_4) && editing)
         {
-            keyPressed = GLFW_KEY_4;
             registry.insert_or_replace<DecoType>(selectedTile, DecoType::OVEN);
         }
-        else if (isKeyPressed(window, GLFW_KEY_5) && keyPressed == 0 && editing)
+        else if (isPressed(GLFW_KEY_5) && editing)
         {
-            keyPressed = GLFW_KEY_5;
             registry.insert_or_replace<DecoType>(selectedTile, DecoType::BRIDGE_HOR);
         }
-        else if (isKeyPressed(window, GLFW_KEY_6) && keyPressed == 0 && editing)
+        else if (isPressed(GLFW_KEY_6) && editing)
         {
-            keyPressed = GLFW_KEY_6;
             registry.insert_or_replace<DecoType>(selectedTile, DecoType::BRIDGE_VER);
         }
-        else if (isKeyPressed(window, GLFW_KEY_N) && keyPressed == 0 && editing)
+        else if (isPressed(GLFW_KEY_N) && editing)
         {
-            keyPressed = GLFW_KEY_N;
             auto neighbour = typeOfNeighbor({-1, 1}, registry);
-            bool shifted = isKeyPressed(window, GLFW_KEY_LEFT_SHIFT) || isKeyPressed(window, GLFW_KEY_RIGHT_SHIFT);
+            bool shifted = isPressed(GLFW_KEY_LEFT_SHIFT) || isPressed(GLFW_KEY_RIGHT_SHIFT);
             if (selectedTileType == TileType::GRASS && neighbour == TileType::WATER)
             {
                 registry.replace<TileType>(selectedTile, shifted ? TileType::WATER_GRASS_NE : TileType::GRASS_WATER_SW);
@@ -442,9 +421,8 @@ struct TileSystem
                 registry.replace<TileType>(selectedTile, shifted ? TileType::PATH_GRASS_NE : TileType::GRASS_PATH_SW);
             }
         }
-        else if (isKeyPressed(window, GLFW_KEY_H) && keyPressed == 0 && editing)
+        else if (isPressed(GLFW_KEY_H) && editing)
         {
-            keyPressed = GLFW_KEY_H;
             auto neighbour = typeOfNeighbor({-1, 0}, registry);
             if (selectedTileType == TileType::GRASS && neighbour == TileType::WATER)
             {
@@ -459,11 +437,10 @@ struct TileSystem
                 registry.replace<TileType>(selectedTile, TileType::GRASS_PATH_W);
             }
         }
-        else if (isKeyPressed(window, GLFW_KEY_Y) && keyPressed == 0 && editing)
+        else if (isPressed(GLFW_KEY_Y) && editing)
         {
-            keyPressed = GLFW_KEY_Y;
             auto neighbour = typeOfNeighbor({-1, -1}, registry);
-            bool shifted = isKeyPressed(window, GLFW_KEY_LEFT_SHIFT) || isKeyPressed(window, GLFW_KEY_RIGHT_SHIFT);
+            bool shifted = isPressed(GLFW_KEY_LEFT_SHIFT) || isPressed(GLFW_KEY_RIGHT_SHIFT);
             if (selectedTileType == TileType::GRASS && neighbour == TileType::WATER)
             {
                 registry.replace<TileType>(selectedTile, shifted ? TileType::WATER_GRASS_SE : TileType::GRASS_WATER_NW);
@@ -473,9 +450,8 @@ struct TileSystem
                 registry.replace<TileType>(selectedTile, TileType::PATH_WATER_NW);
             }
         }
-        else if (isKeyPressed(window, GLFW_KEY_U) && keyPressed == 0 && editing)
+        else if (isPressed(GLFW_KEY_U) && editing)
         {
-            keyPressed = GLFW_KEY_U;
             auto neighbour = typeOfNeighbor({0, -1}, registry);
             if (selectedTileType == TileType::GRASS && neighbour == TileType::WATER)
             {
@@ -486,11 +462,10 @@ struct TileSystem
                 registry.replace<TileType>(selectedTile, TileType::PATH_WATER_N);
             }
         }
-        else if (isKeyPressed(window, GLFW_KEY_I) && keyPressed == 0 && editing)
+        else if (isPressed(GLFW_KEY_I) && editing)
         {
-            keyPressed = GLFW_KEY_I;
             auto neighbour = typeOfNeighbor({1, -1}, registry);
-            bool shifted = isKeyPressed(window, GLFW_KEY_LEFT_SHIFT) || isKeyPressed(window, GLFW_KEY_RIGHT_SHIFT);
+            bool shifted = isPressed(GLFW_KEY_LEFT_SHIFT) || isPressed(GLFW_KEY_RIGHT_SHIFT);
             if (selectedTileType == TileType::GRASS && neighbour == TileType::WATER)
             {
                 registry.replace<TileType>(selectedTile, shifted ? TileType::WATER_GRASS_SW : TileType::GRASS_WATER_NE);
@@ -500,9 +475,8 @@ struct TileSystem
                 registry.replace<TileType>(selectedTile, TileType::PATH_WATER_NE);
             }
         }
-        else if (isKeyPressed(window, GLFW_KEY_K) && keyPressed == 0 && editing)
+        else if (isPressed(GLFW_KEY_K) && editing)
         {
-            keyPressed = GLFW_KEY_K;
             auto neighbour = typeOfNeighbor({1, 0}, registry);
             if (selectedTileType == TileType::GRASS && neighbour == TileType::WATER)
             {
@@ -513,11 +487,10 @@ struct TileSystem
                 registry.replace<TileType>(selectedTile, TileType::PATH_WATER_E);
             }
         }
-        else if (isKeyPressed(window, GLFW_KEY_COMMA) && keyPressed == 0 && editing)
+        else if (isPressed(GLFW_KEY_COMMA) && editing)
         {
-            keyPressed = GLFW_KEY_COMMA;
             auto neighbour = typeOfNeighbor({1, 1}, registry);
-            bool shifted = isKeyPressed(window, GLFW_KEY_LEFT_SHIFT) || isKeyPressed(window, GLFW_KEY_RIGHT_SHIFT);
+            bool shifted = isPressed(GLFW_KEY_LEFT_SHIFT) || isPressed(GLFW_KEY_RIGHT_SHIFT);
             if (selectedTileType == TileType::GRASS && neighbour == TileType::WATER)
             {
                 registry.replace<TileType>(selectedTile, TileType::GRASS_WATER_SE);
@@ -527,9 +500,8 @@ struct TileSystem
                 registry.replace<TileType>(selectedTile, shifted ? TileType::WATER_PATH_NW : TileType::PATH_WATER_SE);
             }
         }
-        else if (isKeyPressed(window, GLFW_KEY_M) && keyPressed == 0 && editing)
+        else if (isPressed(GLFW_KEY_M) && editing)
         {
-            keyPressed = GLFW_KEY_M;
             auto neighbour = typeOfNeighbor({0, 1}, registry);
             if (selectedTileType == TileType::GRASS && neighbour == TileType::WATER)
             {
@@ -543,10 +515,6 @@ struct TileSystem
             {
                 registry.replace<TileType>(selectedTile, TileType::GRASS_PATH_S);
             }
-        }
-        if (!isKeyPressed(window, keyPressed))
-        {
-            keyPressed = 0;
         }
         // Render tiles
         glUseProgram(unlitTextureShader);
@@ -756,8 +724,6 @@ struct TileSystem
     unsigned int unlitColorShader;
     unsigned int unlitTextureShader;
     unsigned int texBuffer;
-    GLFWwindow* window;
-    unsigned int keyPressed = 0;
     Entity selectedTile = 0;
     glm::ivec2 selectedPosition {-1, -1};
     TileType selectedTileType;
@@ -798,10 +764,6 @@ struct MissionSystem
         bool closeToGeorge = glm::length(tinkPos - georgePos) < 4.f;
         bool closeToOven = glm::length(tinkPos - glm::vec2{ovenPos.x, ovenPos.y}) < 5.f;
         gameState.allowMovement = true;
-        if (!isKeyPressed(window, GLFW_KEY_ENTER))
-        {
-            enterPressed = false;
-        }
         switch (gameState.mission)
         {
             case Missions::START:
@@ -812,27 +774,24 @@ struct MissionSystem
             case Missions::CHAT_GEORGE_1:
                 dialogSystem.dialog = "Hey Tink,\nHave you heard about the lesser pottery throw down!!?";
                 gameState.allowMovement = false;
-                if (isKeyPressed(window, GLFW_KEY_ENTER) && !enterPressed)
+                if (isPressed(GLFW_KEY_ENTER))
                 {
-                    enterPressed = true;
                     gameState.mission = Missions::CHAT_GEORGE_2;
                 }
                 break;
             case Missions::CHAT_GEORGE_2:
                 dialogSystem.dialog = "You should make a piece as well!!\nThe jury will love your style!";
                 gameState.allowMovement = false;
-                if (isKeyPressed(window, GLFW_KEY_ENTER) && !enterPressed)
+                if (isPressed(GLFW_KEY_ENTER))
                 {
-                    enterPressed = true;
                     gameState.mission = Missions::CHAT_GEORGE_3;
                 }
                 break;
             case Missions::CHAT_GEORGE_3:
                 dialogSystem.dialog = "Start by gathering some wood for the oven!\nIf you have 5 big pieces, visit me for the next steps!";
                 gameState.allowMovement = false;
-                if (isKeyPressed(window, GLFW_KEY_ENTER) && !enterPressed)
+                if (isPressed(GLFW_KEY_ENTER))
                 {
-                    enterPressed = true;
                     gameState.mission = Missions::GATHER_WOOD;
                 }
                 break;
@@ -851,18 +810,16 @@ struct MissionSystem
             case Missions::CHAT_GEORGE_4:
                 dialogSystem.dialog = "Great! You have the wood!\nAs you know, we need clay to make a piece...";
                 gameState.allowMovement = false;
-                if (isKeyPressed(window, GLFW_KEY_ENTER) && !enterPressed)
+                if (isPressed(GLFW_KEY_ENTER))
                 {
-                    enterPressed = true;
                     gameState.mission = Missions::CHAT_GEORGE_5;
                 }
                 break;
             case Missions::CHAT_GEORGE_5:
                 dialogSystem.dialog = "I guess you can find some clay near the riverbanks!\nGo checkout the banks on the other side of the river!";
                 gameState.allowMovement = false;
-                if (isKeyPressed(window, GLFW_KEY_ENTER) && !enterPressed)
+                if (isPressed(GLFW_KEY_ENTER))
                 {
-                    enterPressed = true;
                     gameState.mission = Missions::GATHER_CLAY;
                 }
                 break;
@@ -881,9 +838,8 @@ struct MissionSystem
             case Missions::CHAT_GEORGE_6:
                 dialogSystem.dialog = "How nice! Now you are ready to make your piece!\nWhen ready, go to the oven for the bisque firing! ";
                 gameState.allowMovement = false;
-                if (isKeyPressed(window, GLFW_KEY_ENTER) && !enterPressed)
+                if (isPressed(GLFW_KEY_ENTER))
                 {
-                    enterPressed = true;
                     gameState.mission = Missions::BAKE_PIECE;
                 }
                 break;
@@ -904,18 +860,16 @@ struct MissionSystem
             case Missions::CHAT_GEORGE_7:
                 dialogSystem.dialog = "Wow, look at that!\nYou are ready for the glazing!";
                 gameState.allowMovement = false;
-                if (isKeyPressed(window, GLFW_KEY_ENTER) && !enterPressed)
+                if (isPressed(GLFW_KEY_ENTER))
                 {
-                    enterPressed = true;
                     gameState.mission = Missions::CHAT_GEORGE_8;
                 }
                 break;
             case Missions::CHAT_GEORGE_8:
                 dialogSystem.dialog = "Now go get some wood and glaze materials.\nYou can find the material on the island up north.";
                 gameState.allowMovement = false;
-                if (isKeyPressed(window, GLFW_KEY_ENTER) && !enterPressed)
+                if (isPressed(GLFW_KEY_ENTER))
                 {
-                    enterPressed = true;
                     gameState.mission = Missions::GATHER_WOOD_AND_GLAZE;
                 }
                 break;
@@ -934,9 +888,8 @@ struct MissionSystem
             case Missions::CHAT_GEORGE_9:
                 dialogSystem.dialog = "Alright, let me make a nice glaze out of these materials.\nHere you go, now apply the glaze and get ready for the final firing!";
                 gameState.allowMovement = false;
-                if (isKeyPressed(window, GLFW_KEY_ENTER) && !enterPressed)
+                if (isPressed(GLFW_KEY_ENTER))
                 {
-                    enterPressed = true;
                     gameState.mission = Missions::GLAZE_PIECE;
                 }
                 break;
@@ -957,27 +910,24 @@ struct MissionSystem
             case Missions::SHOW_GEORGE:
                 dialogSystem.dialog = "Wow, look at that!\nThat looks amazing!!";
                 gameState.allowMovement = false;
-                if (isKeyPressed(window, GLFW_KEY_ENTER) && !enterPressed)
+                if (isPressed(GLFW_KEY_ENTER))
                 {
-                    enterPressed = true;
                     gameState.mission = Missions::CHAT_GEORGE_JURY;
                 }
                 break;
             case Missions::CHAT_GEORGE_JURY:
                 dialogSystem.dialog = "...The jury?? The two of us already look the same.\nAdding a third character with the same sprite is weird...";
                 gameState.allowMovement = false;
-                if (isKeyPressed(window, GLFW_KEY_ENTER) && !enterPressed)
+                if (isPressed(GLFW_KEY_ENTER))
                 {
-                    enterPressed = true;
                     gameState.mission = Missions::CHAT_GEORGE_YOU_WON;
                 }
                 break;
             case Missions::CHAT_GEORGE_YOU_WON:
                 dialogSystem.dialog = "I AM THE JURY-MENEER!!\nAnd you won the lesser pottery throw down!! Congratz!";
                 gameState.allowMovement = false;
-                if (isKeyPressed(window, GLFW_KEY_ENTER) && !enterPressed)
+                if (isPressed(GLFW_KEY_ENTER))
                 {
-                    enterPressed = true;
                     gameState.mission = Missions::END;
                 }
                 break;
@@ -995,8 +945,6 @@ struct MissionSystem
     Entity tink;
     Entity george;
     Entity oven;
-    GLFWwindow* window;
-    bool enterPressed = false;
 };
 
 struct WoodGatheringSystem
@@ -1068,100 +1016,6 @@ struct GlazeGatheringSystem
     GameState& gameState;
 };
 
-struct PongMovementSystem
-{
-    void run(Registry &registry, float deltaTime)
-    {
-        if (isKeyPressed(window, GLFW_KEY_W))
-        {
-            auto& pos = registry.get<glm::vec2>(bar1);
-            pos.y += speed*deltaTime;
-        }
-        if (isKeyPressed(window, GLFW_KEY_S))
-        {
-            auto& pos = registry.get<glm::vec2>(bar1);
-            pos.y -= speed*deltaTime;
-        }
-        if (isKeyPressed(window, GLFW_KEY_UP))
-        {
-            auto& pos = registry.get<glm::vec2>(bar2);
-            pos.y += speed*deltaTime;
-        }
-        if (isKeyPressed(window, GLFW_KEY_DOWN))
-        {
-            auto& pos = registry.get<glm::vec2>(bar2);
-            pos.y -= speed*deltaTime;
-        }
-        if (isKeyPressed(window, GLFW_KEY_P))
-        {        
-            if (registry.has<Patrol>(worker))
-            {
-                registry.remove<Patrol>(worker);
-            }
-            else
-            {
-                registry.insert<Patrol>(worker, Patrol{-0.5f, 0.5f, .5f, 1});
-            }
-        }
-        for (auto bar : {bar1, bar2})
-        {
-            auto& pos = registry.get<glm::vec2>(bar);
-            pos.y = std::max(-1.f, std::min(0.8f, pos.y));
-        }
-    }
-    Entity bar1;
-    Entity bar2;
-    float speed = 0.8f;
-    GLFWwindow* window;
-    Entity worker;
-};
-
-struct Direction : public glm::vec2
-{
-    Direction(double x, double y) : glm::vec2(x, y) {}
-};
-
-struct PongCollisionSystem
-{
-    void run(Registry& registry, float deltaTime)
-    {
-        auto& posBar1 = registry.get<glm::vec2>(bar1);
-        auto& posBar2 = registry.get<glm::vec2>(bar2);
-        auto& posBall = registry.get<glm::vec2>(ball);
-
-        auto& dirBall = registry.get<Direction>(ball);
-        posBall += speed*deltaTime*0.5f*dirBall;
-        if (posBall.x <= -0.99f || posBall.x >= 0.99f)
-        {
-            dirBall.x = -dirBall.x;
-        }
-        if (posBall.y <= -0.99f || posBall.y >= 0.99f)
-        {
-            dirBall.y = -dirBall.y;
-        }
-        if (std::abs(posBall.x + 0.01f - (posBar1.x + 0.01f)) < 0.01f)
-        {
-            if (posBar1.y < posBall.y && posBall.y < posBar1.y + 0.2f)
-            {
-                dirBall.x = -dirBall.x;
-speed *= 1.01;
-            }
-        }
-        if (std::abs(posBall.x - 0.01f - (posBar2.x - 0.01f)) < 0.01f)
-        {
-            if (posBar2.y < posBall.y && posBall.y < posBar2.y + 0.2f)
-            {
-                dirBall.x = -dirBall.x;
-                speed *= 1.01;
-            }
-        }
-    }
-    Entity bar1;
-    Entity bar2;
-    Entity ball;
-    float speed = 1.0f;
-};
-
 struct Ignore {};
 struct RenderSystem
 {
@@ -1182,67 +1036,4 @@ struct RenderSystem
     }
     unsigned int shaderID;
 };
-
-struct WoodCuttingSystem
-{
-    void run(Registry &registry, float deltaTime)
-    {
-        for (auto [entity, position, patrol] : registry.each<glm::vec2, Patrol>())
-        {
-            position.x += patrol.speed * patrol.direction * deltaTime;
-
-            if (position.x > patrol.to)
-            {
-                patrol.direction = -1;
-                position.x = patrol.to - (position.x - patrol.to);
-            }
-
-            if (position.x < patrol.from)
-            {
-                patrol.direction = 1;
-                position.x = -patrol.from + (position.x + patrol.from);
-            }
-        }
-    }
-};
-
-namespace {
-std::random_device rd;
-std::mt19937 gen(rd());
-std::uniform_real_distribution<> dis(-1.0, 1.0);
-glm::vec2 getRandomPos()
-{
-    return {dis(gen), dis(gen)};
-}
-}
-
-struct TreePlantingSystem
-{
-    void run(Registry &registry, float deltaTime)
-    {
-        if (isKeyPressed(window, GLFW_KEY_P))
-        {
-            for (int i = 0; i < 1000; i++)
-            {
-                pressed = true;
-                auto tree = registry.create();
-                registry.insert<Tree>(tree, {});
-                registry.insert<glm::vec2>(tree, getRandomPos());
-                registry.insert<RenderData>(tree, {circleVAO, circleElementCount, GL_TRIANGLE_FAN});             
-                registry.insert<glm::vec4>(tree, {0.2, 1.0, 0.2, 1.0});
-            }
-            std::cout << registry.getEntities<Tree>().size() << " trees planted" << std::endl;
-        }
-
-        if (not isKeyPressed(window, GLFW_KEY_P))
-        {
-            pressed = false;
-        }
-    }
-    GLFWwindow* window;
-    unsigned int circleVAO;
-    unsigned int circleElementCount;
-    bool pressed = false;
-};
-
 #endif

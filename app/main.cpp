@@ -3,9 +3,10 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <cmath>
 
+#include "Renderer/Renderer.h"
 #include "ECS/ECS.h"
 #include "ECS/Systems/Systems.h"
-#include "Renderer/Renderer.h"
+#include "ECS/Systems/InputSystem.h"
 #include "Renderer/Shaders.h"
 #include "Renderer/Textures.h"
 #include "Geometry.h"
@@ -17,6 +18,8 @@ int main(int argc, char *argv[])
     auto window = initializeOpenGLAndCreateWindow();
     if (not window)
         return -1;
+
+    glfwSetKeyCallback(window, keyCallback);
 
     auto textureCatalog = createTextureCatalog("assets/textures");
     auto fontTextureCatalog = createTextureCatalog("assets/fonts");
@@ -53,7 +56,6 @@ int main(int argc, char *argv[])
     tileSystem.unlitColorShader = unlitColorShader;
     tileSystem.unlitTextureShader = unlitTextureShader;
     tileSystem.texBuffer = tileTexBuffer.handle;
-    tileSystem.window = window;
     tileSystem.lineRenderData = tileLineRenderData;
     tileSystem.tileRenderData = tileRenderData;
 
@@ -71,7 +73,6 @@ int main(int argc, char *argv[])
 
     MovementSystem movementSystem { gameState };
     movementSystem.tink = tink;
-    movementSystem.window = window;
     WoodGatheringSystem woodGatheringSystem{tink, gameState};
     ClayGatheringSystem clayGatheringSystem{tink, gameState};
     GlazeGatheringSystem glazeGatheringSystem{tink, gameState};
@@ -83,17 +84,17 @@ int main(int argc, char *argv[])
     missionSystem.tink = tink;
     missionSystem.george = george;
     missionSystem.oven = oven;
-    missionSystem.window = window;
     
     loadLevel(registry);
 
-    //glfwSwapInterval(1);
+    glfwSwapInterval(1);
     auto previousFrame = 0.f;
     while (!glfwWindowShouldClose(window))
     {
+        markKeyStatesHold();
+        glfwPollEvents();
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        glfwPollEvents();
         auto currentFrame = glfwGetTime();
         auto timeDelta = currentFrame - previousFrame;
         previousFrame = currentFrame;

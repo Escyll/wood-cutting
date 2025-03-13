@@ -13,6 +13,7 @@ target_sources(wood-cutting PRIVATE
     Geometry.h
     ECS/ECS.h
     ECS/Systems/Systems.h
+    ECS/Systems/InputSystem.h
     Renderer/Renderer.h
     Renderer/Shaders.h
     Renderer/Textures.h
