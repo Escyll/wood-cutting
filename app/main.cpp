@@ -41,7 +41,7 @@ int main(int argc, char *argv[])
     BufferData charTexBuffer = bufferData({{0.2, 0.2}, {0.2, 0.5}, {0.5, 0.5}, {0.5, 0.2}});
 
     auto tileLineVAO = createPosVAO(tileBuffer.handle, rectangleLineIndexBuffer.handle);
-    auto tileVAO = createPosTexVAO(tileBuffer.handle, tileTexBuffer.handle, rectangleIndexBuffer.handle);
+    auto tileVAO = createPosTexVAO(tileBuffer.handle, tileTexBuffer.handle);
     auto charVAO = createPosTexVAO(charPosBuffer.handle, charTexBuffer.handle, rectangleIndexBuffer.handle);
     RenderData charRenderData { charVAO, rectangleIndexBuffer.elementCount, GL_TRIANGLES, DrawStrategy::ELEMENTS };
     RenderData tileRenderData { tileVAO, rectangleIndexBuffer.elementCount, GL_TRIANGLES, DrawStrategy::ELEMENTS };
@@ -53,11 +53,14 @@ int main(int argc, char *argv[])
     RenderSystem renderSystem;
     renderSystem.shaderID = unlitColorShader;
     TileSystem tileSystem { gameState, textureCatalog };
-    tileSystem.unlitColorShader = unlitColorShader;
     tileSystem.unlitTextureShader = unlitTextureShader;
+    tileSystem.posBuffer = tileBuffer.handle;
     tileSystem.texBuffer = tileTexBuffer.handle;
-    tileSystem.lineRenderData = tileLineRenderData;
     tileSystem.tileRenderData = tileRenderData;
+
+    TileEditingSystem tileEditingSystem { gameState };
+    tileEditingSystem.unlitColorShader = unlitColorShader;
+    tileEditingSystem.lineRenderData = tileLineRenderData;
 
     Registry registry;
     Entity tink = registry.create();
@@ -110,6 +113,7 @@ int main(int argc, char *argv[])
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         tileSystem.run(registry, timeDelta);
+        tileEditingSystem.run(registry, timeDelta);
         renderSystem.run(registry, timeDelta);
         dialogSystem.run(registry, timeDelta);
 

@@ -102,7 +102,7 @@ void renderText(const std::string& text, BMFont& font, unsigned int texBuffer, u
     unsigned int vbo;
     glGenBuffers(1, &vbo);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, data.size() * sizeof(glm::vec2), &data[0], GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, data.size() * sizeof(glm::vec2), &data[0], GL_DYNAMIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     return {vbo, data.size()};
 }
@@ -138,8 +138,8 @@ void renderText(const std::string& text, BMFont& font, unsigned int texBuffer, u
     unsigned int VAO;
     glGenVertexArrays(1, &VAO);
     glBindVertexArray(VAO);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (void*)0);
-    glVertexArrayVertexBuffer(VAO, 0, posVBO, 0, sizeof(glm::vec2));
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
+    glVertexArrayVertexBuffer(VAO, 0, posVBO, 0, sizeof(glm::vec3));
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (void*)0);
     glVertexArrayVertexBuffer(VAO, 1, texVBO, 0, sizeof(glm::vec2));
