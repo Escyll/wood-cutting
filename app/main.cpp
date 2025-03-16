@@ -9,6 +9,7 @@
 #include "ECS/Systems/InputSystem.h"
 #include "Renderer/Shaders.h"
 #include "Renderer/Textures.h"
+#include "Renderer/Window.h"
 #include "Geometry.h"
 #include "Catalog.h"
 #include "FontRendering/BMFont.h"
@@ -16,6 +17,7 @@
 int main(int argc, char *argv[])
 {
     auto window = initializeOpenGLAndCreateWindow();
+
     if (not window)
         return -1;
 
@@ -43,15 +45,13 @@ int main(int argc, char *argv[])
     auto tileLineVAO = createPosVAO(tileBuffer.handle, rectangleLineIndexBuffer.handle);
     auto tileVAO = createPosTexVAO(tileBuffer.handle, tileTexBuffer.handle);
     auto charVAO = createPosTexVAO(charPosBuffer.handle, charTexBuffer.handle, rectangleIndexBuffer.handle);
-    RenderData charRenderData { charVAO, rectangleIndexBuffer.elementCount, GL_TRIANGLES, DrawStrategy::ELEMENTS };
-    RenderData tileRenderData { tileVAO, rectangleIndexBuffer.elementCount, GL_TRIANGLES, DrawStrategy::ELEMENTS };
-    RenderData tileLineRenderData { tileLineVAO, rectangleLineIndexBuffer.elementCount, GL_LINES, DrawStrategy::ELEMENTS };
+    RenderData charRenderData { charVAO, charPosBuffer.handle, charTexBuffer.handle, GL_TRIANGLES };
+    RenderData tileRenderData { tileVAO, tileBuffer.handle, tileTexBuffer.handle, GL_TRIANGLES };
+    RenderData tileLineRenderData { tileLineVAO, tileBuffer.handle, 0, GL_LINES };
 
     GameState gameState;
     gameState.mission = Missions::START;
 
-    RenderSystem renderSystem;
-    renderSystem.shaderID = unlitColorShader;
     TileSystem tileSystem { gameState, textureCatalog };
     tileSystem.unlitTextureShader = unlitTextureShader;
     tileSystem.posBuffer = tileBuffer.handle;
@@ -90,7 +90,7 @@ int main(int argc, char *argv[])
     
     loadLevel(registry);
 
-    glfwSwapInterval(1);
+    glfwSwapInterval(0);
     auto previousFrame = 0.f;
     while (!glfwWindowShouldClose(window))
     {
@@ -114,7 +114,6 @@ int main(int argc, char *argv[])
 
         tileSystem.run(registry, timeDelta);
         tileEditingSystem.run(registry, timeDelta);
-        renderSystem.run(registry, timeDelta);
         dialogSystem.run(registry, timeDelta);
 
         glfwSwapBuffers(window);

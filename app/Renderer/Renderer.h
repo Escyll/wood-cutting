@@ -11,19 +11,21 @@
 #include <glm/gtc/type_ptr.hpp>
 #include "FontRendering/BMFont.h"
 
-enum class DrawStrategy
-{
-    ARRAYS,
-    ELEMENTS
-};
-
 struct RenderData
 {
     unsigned int VAO = 0;
-    size_t elementCount = 0;
+    unsigned int posVBO = 0;
+    unsigned int texVBO = 0;
     int drawMode = GL_TRIANGLES;
-    DrawStrategy drawStrategy = DrawStrategy::ARRAYS;
 };
+
+bool operator==(const RenderData& renderDataA, const RenderData& renderDataB)
+{
+    return renderDataA.VAO == renderDataB.VAO &&
+        renderDataA.posVBO == renderDataB.posVBO &&
+        renderDataA.texVBO == renderDataB.texVBO &&
+        renderDataA.drawMode == renderDataB.drawMode;
+}
 
 struct BufferData {
     unsigned int handle = 0;
@@ -48,20 +50,6 @@ void setUniform(unsigned int shader, const std::string& name, const glm::vec4& v
 void setUniform(unsigned int shader, const std::string& name, const glm::mat4& mat)
 {
     glUniformMatrix4fv(getLoc(shader, name), 1, GL_FALSE, glm::value_ptr(mat));
-}
-
-void render(const RenderData& renderData)
-{
-    glBindVertexArray(renderData.VAO);
-    switch (renderData.drawStrategy)
-    {
-        case DrawStrategy::ELEMENTS:
-            glDrawElements(renderData.drawMode, renderData.elementCount, GL_UNSIGNED_INT, nullptr);
-            break;
-        case DrawStrategy::ARRAYS:
-            glDrawArrays(renderData.drawMode, 0, renderData.elementCount);
-            break;
-    }
 }
 
 void renderText(const std::string& text, BMFont& font, unsigned int texBuffer, unsigned int shader, unsigned int texture, float screenScale, float screenLineHeight, RenderData& renderData)
@@ -92,7 +80,7 @@ void renderText(const std::string& text, BMFont& font, unsigned int texBuffer, u
         auto model = glm::translate(glm::mat4(1.0f), glm::vec3(xadvance + ch.xoffset, yadvance + ch.yoffset, 0.f));
         model = glm::scale(model, glm::vec3((float)ch.width / font.common.lineHeight, (float)ch.height / font.common.lineHeight, 1.0));
         setUniform(shader, "model", model);
-        render(renderData);
+        // render(renderData); TODO Fix me
         xadvance += ch.xadvance;
     }
 }
@@ -138,8 +126,8 @@ void renderText(const std::string& text, BMFont& font, unsigned int texBuffer, u
     unsigned int VAO;
     glGenVertexArrays(1, &VAO);
     glBindVertexArray(VAO);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
-    glVertexArrayVertexBuffer(VAO, 0, posVBO, 0, sizeof(glm::vec3));
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (void*)0);
+    glVertexArrayVertexBuffer(VAO, 0, posVBO, 0, sizeof(glm::vec2));
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (void*)0);
     glVertexArrayVertexBuffer(VAO, 1, texVBO, 0, sizeof(glm::vec2));
@@ -152,42 +140,132 @@ void renderText(const std::string& text, BMFont& font, unsigned int texBuffer, u
     return VAO;
 }
 
-void framebuffer_size_callback(GLFWwindow* window, int width, int height)
+struct Material
 {
-    glViewport(0, 0, width, height);
+    std::string name;
+    unsigned int shader;
+    std::map<std::string, int> uniform1is;
+    std::map<std::string, glm::vec4> uniform4fs;
+    std::map<std::string, glm::mat4> uniformMatrix4fvs;
+    RenderData renderData;
+    unsigned int texture;
+};
+
+bool operator==(const Material& matA, const Material& matB)
+{
+    // TODO Map equalities
+    return matA.name == matB.name &&
+        matA.shader == matB.shader &&
+        matA.renderData == matB.renderData &&
+        matA.texture == matB.texture;
 }
 
-void processInput(GLFWwindow* window)
+struct SubLayer
 {
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-    {
-        glfwSetWindowShouldClose(window, true);
-    }
+    std::unordered_map<std::string, std::vector<glm::vec2>> positions;
+    std::unordered_map<std::string, std::vector<glm::vec2>> texCoords;
+    std::unordered_map<std::string, Material> materials;
+};
+
+struct Layer
+{
+    std::map<int, SubLayer> subLayers;
+};
+
+struct RenderContext
+{
+    std::map<int, Layer> layers;
+    int activeLayer = 0;
+    int activeSubLayer = 0;
+    Material activeMaterial = {};
+};
+
+RenderContext renderContext;
+
+void setLayer(int layer)
+{
+    renderContext.activeLayer = layer;
+    renderContext.activeSubLayer = 0;
+    renderContext.activeMaterial = {};
 }
 
-[[nodiscard]] GLFWwindow* initializeOpenGLAndCreateWindow()
+void setSubLayer(int subLayer)
 {
-    glfwInit();
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    
-    GLFWwindow* window = glfwCreateWindow(1920, 1080, "Wood cutting", nullptr, nullptr);
-    if (window == nullptr)
-    {
-        std::cout << "Failed to create GLFW window" << std::endl;
-        glfwTerminate();
-        return nullptr;
-    }
-    glfwMakeContextCurrent(window);
-    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+    renderContext.activeSubLayer = subLayer;
+    renderContext.activeMaterial = {};
+}
 
-    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
+void setMaterial(const Material& material)
+{
+    renderContext.activeMaterial = material;
+    renderContext.layers[renderContext.activeLayer].subLayers[renderContext.activeSubLayer].materials[material.name] = material;
+}
+
+void queue(const std::vector<glm::vec2>& newPositions)
+{
+    auto& subLayer = renderContext.layers[renderContext.activeLayer].subLayers[renderContext.activeSubLayer];
+    auto& positions = subLayer.positions[renderContext.activeMaterial.name];
+    positions.insert(positions.end(), newPositions.begin(), newPositions.end());
+}
+
+void queue(const std::vector<glm::vec2>& newPositions, const std::vector<glm::vec2>& newTexCoords)
+{
+    auto& subLayer = renderContext.layers[renderContext.activeLayer].subLayers[renderContext.activeSubLayer];
+    auto& positions = subLayer.positions[renderContext.activeMaterial.name];
+    positions.insert(positions.end(), newPositions.begin(), newPositions.end());
+    auto& texCoords = subLayer.texCoords[renderContext.activeMaterial.name];
+    texCoords.insert(texCoords.end(), newTexCoords.begin(), newTexCoords.end());
+}
+
+void printGLDebug(const std::string& message)
+{
+    glDebugMessageInsert(GL_DEBUG_SOURCE_APPLICATION, GL_DEBUG_TYPE_MARKER, 0, GL_DEBUG_SEVERITY_NOTIFICATION, -1, message.c_str());
+}
+
+void flush()
+{
+    for (auto& [layerNumber, layer] : renderContext.layers)
     {
-        std::cout << "Failed to initialize GLAD" << std:: endl;
-        return nullptr;
+        printGLDebug(std::string("Layer ") + std::to_string(layerNumber));
+        for (auto& [subLayerNumber, subLayer] : layer.subLayers)
+        {
+            printGLDebug(std::string("SubLayer ") + std::to_string(subLayerNumber));
+            for (auto& [materialName, material] : subLayer.materials)
+            {
+                printGLDebug(std::string("Material ") + materialName);
+                glUseProgram(material.shader);
+                for (auto& [uniformName, value] : material.uniform1is)
+                {
+                    setUniform(material.shader, uniformName, value);
+                }
+                for (auto& [uniformName, value] : material.uniform4fs)
+                {
+                    setUniform(material.shader, uniformName, value);
+                }
+                for (auto& [uniformName, value] : material.uniformMatrix4fvs)
+                {
+                    setUniform(material.shader, uniformName, value);
+                }
+                
+                glBindVertexArray(material.renderData.VAO);
+
+                glActiveTexture(GL_TEXTURE0);
+                glBindTexture(GL_TEXTURE_2D, material.texture);
+                
+                auto& positions = subLayer.positions[material.name];
+                glBindBuffer(GL_ARRAY_BUFFER, material.renderData.posVBO);
+                glBufferData(GL_ARRAY_BUFFER, positions.size()*sizeof(glm::vec2), &positions[0], GL_DYNAMIC_DRAW);
+                
+                auto& texCoords = subLayer.texCoords[material.name];
+                glBindBuffer(GL_ARRAY_BUFFER, material.renderData.texVBO);
+                glBufferData(GL_ARRAY_BUFFER, texCoords.size()*sizeof(glm::vec2), &texCoords[0], GL_DYNAMIC_DRAW);
+                
+                glDrawArrays(GL_TRIANGLES, 0, positions.size());
+            }
+        }
     }
-    return window;
+
+    renderContext.layers = {};
 }
 
 #endif

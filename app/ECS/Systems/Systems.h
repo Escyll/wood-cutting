@@ -534,7 +534,7 @@ struct TileEditingSystem
                     selectedPosition = pos;
                 }
                 setUniform(unlitColorShader, "color", selected ? glm::vec4{1.f, 1.f, 0.f, 1.f} : blocked ? glm::vec4{1.f, 0.f, 0.f, 1.f} : glm::vec4{0.f, 0.f, 0.f, 1.f});
-                render(lineRenderData);
+                // render(lineRenderData); TODO Fix me
             }
         }
 
@@ -609,27 +609,27 @@ struct TileSystem
         };
     }
 
-    std::vector<glm::vec3> toPosCoord(const glm::ivec2& pos, float z)
+    std::vector<glm::vec2> toPosCoord(const glm::ivec2& pos)
     {
         return {
-            glm::vec3{pos.x, pos.y, z},
-            glm::vec3{pos.x + 1, pos.y, z},
-            glm::vec3{pos.x + 1, pos.y + 1, z},
-            glm::vec3{pos.x + 1, pos.y + 1, z},
-            glm::vec3{pos.x, pos.y + 1, z},
-            glm::vec3{pos.x, pos.y, z},
+            glm::vec2{pos.x, pos.y},
+            glm::vec2{pos.x + 1, pos.y},
+            glm::vec2{pos.x + 1, pos.y + 1},
+            glm::vec2{pos.x + 1, pos.y + 1},
+            glm::vec2{pos.x, pos.y + 1},
+            glm::vec2{pos.x, pos.y},
         };
     }
 
-    std::vector<glm::vec3> toPosCoord(const glm::ivec2& pos, float z, const glm::vec2& size, const glm::vec2& translation)
+    std::vector<glm::vec2> toPosCoord(const glm::ivec2& pos, const glm::vec2& size, const glm::vec2& translation)
     {
         return {
-            glm::vec3{pos.x + translation.x, pos.y + translation.y, z},
-            glm::vec3{pos.x + translation.x + size.x, pos.y + translation.y, z},
-            glm::vec3{pos.x + translation.x + size.x, pos.y + translation.y + size.y, z},
-            glm::vec3{pos.x + translation.x + size.x, pos.y + translation.y + size.y, z},
-            glm::vec3{pos.x + translation.x, pos.y + translation.y + size.y, z},
-            glm::vec3{pos.x + translation.x, pos.y + translation.y, z},
+            glm::vec2{pos.x + translation.x, pos.y + translation.y},
+            glm::vec2{pos.x + translation.x + size.x, pos.y + translation.y},
+            glm::vec2{pos.x + translation.x + size.x, pos.y + translation.y + size.y},
+            glm::vec2{pos.x + translation.x + size.x, pos.y + translation.y + size.y},
+            glm::vec2{pos.x + translation.x, pos.y + translation.y + size.y},
+            glm::vec2{pos.x + translation.x, pos.y + translation.y},
         };
     }
 
@@ -638,44 +638,40 @@ struct TileSystem
         std::unordered_map<unsigned int, std::vector<glm::vec3>> posCoords;
         std::unordered_map<unsigned int, std::vector<glm::vec2>> texCoords;
         // Render tiles
+
+        Material mat;
+        mat.name = "Base";
+        mat.shader = unlitTextureShader;
+        mat.uniform1is["texture1"] = 0;
+        mat.uniformMatrix4fvs["projection"] = glm::ortho(0.f, 30*1920.f/1080.f, 30.f, 0.f, -100.f, 100.f);
+        mat.uniformMatrix4fvs["model"] = glm::translate(glm::mat4(1.0f), glm::vec3(-0.5f, -0.5f, 0.0f)); // TODO This should be view now
+        mat.renderData = tileRenderData;
+
+        setLayer(0);
         for (auto [tileEntity, pos, type]: registry.each<glm::ivec2, TileType>())
         {
             auto& atlasInfo = tileAtlasInfoMap[type];
             unsigned int texture = getTexture(textureCatalog, atlasInfo.texture);
-            auto localTexCoords = toTextureCoord(atlasInfo.pos, atlasInfo.atlasSize);
-            texCoords[texture].insert(texCoords[texture].end(), localTexCoords.begin(), localTexCoords.end());
-            auto localPosCoords = toPosCoord(pos, 0.f);
-            posCoords[texture].insert(posCoords[texture].end(), localPosCoords.begin(), localPosCoords.end());
+            mat.name = atlasInfo.texture;
+            mat.texture = texture;
+            setMaterial(mat);
+            queue(toPosCoord(pos), toTextureCoord(atlasInfo.pos, atlasInfo.atlasSize));
         }
+
+        flush();
+
+        setLayer(1);
         for (auto [tileEntity, pos, type]: registry.each<glm::ivec2, DecoType>())
         {
             auto& atlasInfo = decoAtlasInfoMap[type];
             unsigned int texture = getTexture(textureCatalog, atlasInfo.texture);
-            auto localTexCoords = toTextureCoord(atlasInfo.pos, atlasInfo.atlasSize, atlasInfo.span);
-            texCoords[texture].insert(texCoords[texture].end(), localTexCoords.begin(), localTexCoords.end());
-            auto localPosCoords = toPosCoord(pos, 1.f, atlasInfo.spriteSize, atlasInfo.spriteTranslate);
-            posCoords[texture].insert(posCoords[texture].end(), localPosCoords.begin(), localPosCoords.end());
+            mat.name = atlasInfo.texture;
+            mat.texture = texture;
+            setMaterial(mat);
+            queue(toPosCoord(pos, atlasInfo.spriteSize, atlasInfo.spriteTranslate), toTextureCoord(atlasInfo.pos, atlasInfo.atlasSize, atlasInfo.span));
         }
-        glUseProgram(unlitTextureShader);
-        setUniform(unlitTextureShader, "texture1", 0);
-        glBindVertexArray(tileRenderData.VAO);
-        auto projection = glm::ortho(0.f, 30*1920.f/1080.f, 30.f, 0.f, -100.f, 100.f);
-        setUniform(unlitTextureShader, "projection", projection);
-        auto model = glm::translate(glm::mat4(1.0f), glm::vec3(-0.5f, -0.5f, 0.0f));
-        setUniform(unlitTextureShader, "model", model);
-        glActiveTexture(GL_TEXTURE0);
-        glEnable(GL_DEPTH_TEST);
-        for (auto& [texture, positions] : posCoords)
-        {
-            auto& localTexCoords = texCoords[texture];
-            glBindTexture(GL_TEXTURE_2D, texture);
-            glBindBuffer(GL_ARRAY_BUFFER, posBuffer);
-            glBufferData(GL_ARRAY_BUFFER, positions.size()*sizeof(glm::vec3), &positions[0], GL_DYNAMIC_DRAW);
-            glBindBuffer(GL_ARRAY_BUFFER, texBuffer);
-            glBufferData(GL_ARRAY_BUFFER, localTexCoords.size()*sizeof(glm::vec2), &localTexCoords[0], GL_DYNAMIC_DRAW);
-            glDrawArrays(GL_TRIANGLES, 0, positions.size());
-        }
-        glDisable(GL_DEPTH_TEST);
+
+        flush();
 
         //{
         //    auto pos = registry.get<Pos>(george);
@@ -717,7 +713,7 @@ struct DialogSystem
         projection = glm::scale(projection, glm::vec3(0.5f, 0.5f, 1.f));
         setUniform(unlitTextureShader, "projection", projection);
         auto comicSansTexture = getTexture(fontTextureCatalog, "ComicSans80/ComicSans80_0.png");
-        //renderText(dialog, font, charTexBuffer, unlitTextureShader, comicSansTexture, 1.f / 1080.f, font.common.lineHeight, charRenderData);
+        renderText(dialog, font, charTexBuffer, unlitTextureShader, comicSansTexture, 1.f / 1080.f, font.common.lineHeight, charRenderData);
     }
     BMFont& font;
     TextureCatalog& fontTextureCatalog;
@@ -990,24 +986,4 @@ struct GlazeGatheringSystem
     GameState& gameState;
 };
 
-struct Ignore {};
-struct RenderSystem
-{
-    void run(Registry &registry, float deltaTime)
-    {
-        glUseProgram(shaderID);
-        for (auto [entity, position, renderData, color] : registry.each<glm::vec2, RenderData, glm::vec4>())
-        {
-            if (registry.has<Ignore>(entity))
-                continue;
-            auto model = glm::translate(glm::mat4(1.0f), glm::vec3(position.x, position.y, 0.f));
-            setUniform(shaderID, "model", model);
-            auto projection = glm::ortho(0.f, 30*1920.f/1080.f, 30.f, 0.f);
-            setUniform(shaderID, "projection", projection);
-            setUniform(shaderID, "color", color);
-            render(renderData);
-        }
-    }
-    unsigned int shaderID;
-};
 #endif

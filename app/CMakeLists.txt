@@ -15,6 +15,7 @@ target_sources(wood-cutting PRIVATE
     ECS/Systems/Systems.h
     ECS/Systems/InputSystem.h
     Renderer/Renderer.h
+    Renderer/Window.h
     Renderer/Shaders.h
     Renderer/Textures.h
     FontRendering/BMFont.h
