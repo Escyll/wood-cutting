@@ -126,6 +126,11 @@ struct Patrol
     int direction;
 };
 
+struct Layer
+{
+    int layer;
+};
+
 struct Tree {};
 
 struct Blocked{};
@@ -191,11 +196,14 @@ void loadLevel(Registry& registry)
     {
         glm::ivec2 pos;
         TileType type;
+        Layer layer;
         wf.read(reinterpret_cast<char*>(&pos), sizeof(pos));
         wf.read(reinterpret_cast<char*>(&type), sizeof(type));
+        wf.read(reinterpret_cast<char*>(&layer), sizeof(layer));
         auto tile = registry.create();
         registry.insert<glm::ivec2>(tile, pos);
         registry.insert<TileType>(tile, type);
+        registry.insert<Layer>(tile, layer);
     }
     wf.read(reinterpret_cast<char*>(&count), sizeof(count));
     if (count == 0)
@@ -210,11 +218,14 @@ void loadLevel(Registry& registry)
     {
         glm::ivec2 pos;
         DecoType type;
+        Layer layer;
         wf.read(reinterpret_cast<char*>(&pos), sizeof(pos));
         wf.read(reinterpret_cast<char*>(&type), sizeof(type));
+        wf.read(reinterpret_cast<char*>(&layer), sizeof(layer));
         auto tile = registry.create();
         registry.insert<glm::ivec2>(tile, pos);
         registry.insert<DecoType>(tile, type);
+        registry.insert<Layer>(tile, layer);
     }
     wf.read(reinterpret_cast<char*>(&count), sizeof(count));
     if (count == 0)
@@ -310,6 +321,8 @@ struct TileEditingSystem
             {
                 wf.write(reinterpret_cast<char*>(&pos), sizeof(pos));
                 wf.write(reinterpret_cast<char*>(&tileType), sizeof(tileType));
+                int layer = 0;
+                wf.write(reinterpret_cast<char*>(&layer), sizeof(layer));
             }
             auto decoTiles = registry.each<glm::ivec2, DecoType>();
             count = decoTiles.size();
@@ -318,6 +331,8 @@ struct TileEditingSystem
             {
                 wf.write(reinterpret_cast<char*>(&pos), sizeof(pos));
                 wf.write(reinterpret_cast<char*>(&decoType), sizeof(decoType));
+                int layer = decoType == DecoType::OVEN ? 2 : 1;
+                wf.write(reinterpret_cast<char*>(&layer), sizeof(layer));
             }
             auto blockedTiles = registry.each<glm::ivec2, Blocked>();
             count = blockedTiles.size();
@@ -609,7 +624,7 @@ struct TileSystem
         };
     }
 
-    std::vector<glm::vec2> toPosCoord(const glm::ivec2& pos)
+    std::vector<glm::vec2> toPosCoord(const glm::vec2& pos)
     {
         return {
             glm::vec2{pos.x, pos.y},
@@ -621,7 +636,7 @@ struct TileSystem
         };
     }
 
-    std::vector<glm::vec2> toPosCoord(const glm::ivec2& pos, const glm::vec2& size, const glm::vec2& translation)
+    std::vector<glm::vec2> toPosCoord(const glm::vec2& pos, const glm::vec2& size, const glm::vec2& translation)
     {
         return {
             glm::vec2{pos.x + translation.x, pos.y + translation.y},
@@ -639,59 +654,61 @@ struct TileSystem
         std::unordered_map<unsigned int, std::vector<glm::vec2>> texCoords;
         // Render tiles
 
-        Material mat;
+        Render::Material mat;
         mat.name = "Base";
         mat.shader = unlitTextureShader;
         mat.uniform1is["texture1"] = 0;
-        mat.uniformMatrix4fvs["projection"] = glm::ortho(0.f, 30*1920.f/1080.f, 30.f, 0.f, -100.f, 100.f);
+        mat.uniformMatrix4fvs["projection"] = glm::ortho(0.f, 30*1920.f/1080.f, 0.f, 30.f, -100.f, 100.f);
         mat.uniformMatrix4fvs["model"] = glm::translate(glm::mat4(1.0f), glm::vec3(-0.5f, -0.5f, 0.0f)); // TODO This should be view now
         mat.renderData = tileRenderData;
 
-        setLayer(0);
-        for (auto [tileEntity, pos, type]: registry.each<glm::ivec2, TileType>())
+        for (auto [tileEntity, pos, type, layer]: registry.each<glm::ivec2, TileType, Layer>())
         {
+            Render::setLayer(layer.layer);
+            Render::setSubLayer(layer.layer == 2 ? pos.y : 0);
             auto& atlasInfo = tileAtlasInfoMap[type];
             unsigned int texture = getTexture(textureCatalog, atlasInfo.texture);
             mat.name = atlasInfo.texture;
             mat.texture = texture;
-            setMaterial(mat);
-            queue(toPosCoord(pos), toTextureCoord(atlasInfo.pos, atlasInfo.atlasSize));
+            Render::setMaterial(mat);
+            Render::queue(toPosCoord(pos), toTextureCoord(atlasInfo.pos, atlasInfo.atlasSize));
         }
 
-        flush();
-
-        setLayer(1);
-        for (auto [tileEntity, pos, type]: registry.each<glm::ivec2, DecoType>())
+        for (auto [tileEntity, pos, type, layer]: registry.each<glm::ivec2, DecoType, Layer>())
         {
             auto& atlasInfo = decoAtlasInfoMap[type];
             unsigned int texture = getTexture(textureCatalog, atlasInfo.texture);
             mat.name = atlasInfo.texture;
             mat.texture = texture;
-            setMaterial(mat);
-            queue(toPosCoord(pos, atlasInfo.spriteSize, atlasInfo.spriteTranslate), toTextureCoord(atlasInfo.pos, atlasInfo.atlasSize, atlasInfo.span));
+            Render::setLayer(layer.layer);
+            Render::setSubLayer(layer.layer == 2 ? pos.y + atlasInfo.spriteSize.y + atlasInfo.spriteTranslate.y : 0); // TODO Check this
+            Render::setMaterial(mat);
+            auto posCoords = toPosCoord(pos, atlasInfo.spriteSize, atlasInfo.spriteTranslate);
+            auto texCoords = toTextureCoord(atlasInfo.pos, atlasInfo.atlasSize, atlasInfo.span);
+            Render::queue(posCoords, texCoords);
+        }     
+
+        {
+            unsigned int texture = getTexture(textureCatalog, "Cute_Fantasy_Free/Player/Player.png");
+            mat.name = "Cute_Fantasy_Free/Player/Player.png";
+            mat.texture = texture;
+            Render::setLayer(2);
+            
+            auto pos = registry.get<Pos>(george);
+            auto texCoords = toTextureCoord({1, 8}, {6, 10}, {1, 1});
+            auto posCoords = toPosCoord(pos, {3, 3}, {-1.5f, -2.f});
+            Render::setSubLayer(pos.y + 3);
+            Render::setMaterial(mat); // TODO Should this be reset by layer and sublayer?
+            Render::queue(posCoords, texCoords);
+
+            pos = registry.get<Pos>(tink);
+            texCoords = toTextureCoord({1, 9}, {6, 10}, {1, 1});
+            posCoords = toPosCoord(pos, {3, 3}, {-1.5f, -2.f});
+            Render::setSubLayer(pos.y + 3);
+            Render::setMaterial(mat); // TODO Should this be reset by layer and sublayer?
+            Render::queue(posCoords, texCoords);
         }
-
-        flush();
-
-        //{
-        //    auto pos = registry.get<Pos>(george);
-        //    auto model = glm::translate(glm::mat4(1.0f), glm::vec3(pos.x - 1.5f, pos.y - 2.f, 2.f));
-        //    model = glm::scale(model, {3, 3, 1});
-        //    texCoords = toTextureCoord({2, 0}, {6, 10});
-        //    glBindTexture(GL_TEXTURE_2D, getTexture(textureCatalog, "Cute_Fantasy_Free/Player/Player.png"));
-        //    setUniform(unlitTextureShader, "model", model);
-        //    glBufferSubData(GL_ARRAY_BUFFER, 0, 4*sizeof(glm::vec2), &texCoords[0]);
-        //    render(tileRenderData);
-        //    
-        //    pos = registry.get<Pos>(tink);
-        //    model = glm::translate(glm::mat4(1.0f), glm::vec3(pos.x - 1.5f, pos.y - 2.f, 3.f));
-        //    model = glm::scale(model, {3, 3, 1});
-        //    texCoords = toTextureCoord({0, 0}, {6, 10});
-        //    glBindTexture(GL_TEXTURE_2D, getTexture(textureCatalog, "Cute_Fantasy_Free/Player/Player.png"));
-        //    setUniform(unlitTextureShader, "model", model);
-        //    glBufferSubData(GL_ARRAY_BUFFER, 0, 4*sizeof(glm::vec2), &texCoords[0]);
-        //    render(tileRenderData);
-        //}
+        Render::flush();
     }
     GameState& gameState;
     TextureCatalog& textureCatalog;

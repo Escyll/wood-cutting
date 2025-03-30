@@ -140,6 +140,9 @@ void renderText(const std::string& text, BMFont& font, unsigned int texBuffer, u
     return VAO;
 }
 
+namespace Render
+{
+
 struct Material
 {
     std::string name;
@@ -169,14 +172,14 @@ struct SubLayer
 
 struct Layer
 {
-    std::map<int, SubLayer> subLayers;
+    std::map<float, SubLayer> subLayers;
 };
 
 struct RenderContext
 {
     std::map<int, Layer> layers;
     int activeLayer = 0;
-    int activeSubLayer = 0;
+    float activeSubLayer = 0;
     Material activeMaterial = {};
 };
 
@@ -189,7 +192,7 @@ void setLayer(int layer)
     renderContext.activeMaterial = {};
 }
 
-void setSubLayer(int subLayer)
+void setSubLayer(float subLayer)
 {
     renderContext.activeSubLayer = subLayer;
     renderContext.activeMaterial = {};
@@ -266,6 +269,8 @@ void flush()
     }
 
     renderContext.layers = {};
+}
+
 }
 
 #endif
