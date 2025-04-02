@@ -35,4 +35,30 @@ bool loadTexture(const std::string& path, unsigned int& texture)
     return true;
 }
 
+struct Texture {
+    unsigned int handle;
+    int width;
+    int height;
+};
+
+struct Frame {
+    int x;
+    int y;
+    int width;
+    int height;
+    float duration;
+};
+
+struct Animation {
+    std::string name;
+    std::string texture;
+    float duration;
+    std::vector<Frame> frames;
+};
+
+struct ActiveAnimation {
+    std::string animation;
+    float currentTime;
+};
+
 #endif

@@ -156,9 +156,11 @@ struct Material
 
 bool operator==(const Material& matA, const Material& matB)
 {
-    // TODO Map equalities
     return matA.name == matB.name &&
         matA.shader == matB.shader &&
+        matA.uniform1is == matB.uniform1is &&
+        matA.uniform4fs == matB.uniform4fs &&
+        matA.uniformMatrix4fvs == matB.uniformMatrix4fvs &&
         matA.renderData == matB.renderData &&
         matA.texture == matB.texture;
 }

@@ -5,6 +5,7 @@
 #include <fstream>
 #include <sstream>
 
+// TODO: Move to some kind of io file
 std::string readFile(const std::string& path)
 {
     std::ifstream file(path);

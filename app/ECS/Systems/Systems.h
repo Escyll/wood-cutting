@@ -934,6 +934,26 @@ struct MissionSystem
     Entity oven;
 };
 
+struct AnimationSystem
+{
+    void run(Registry &registry, float deltaTime)
+    {
+        for (auto [entity, activeAnimation] : registry.each<ActiveAnimation>())
+        {
+            auto& currentAnimation = getAnimation(catalog, activeAnimation.animation);
+            activeAnimation.currentTime += deltaTime;
+            if (activeAnimation.currentTime > currentAnimation.duration)
+            {
+                activeAnimation.currentTime -= currentAnimation.duration;
+            }
+            registry.replace(entity, activeAnimation);
+            std::cerr << activeAnimation.animation << " - " << activeAnimation.currentTime << std::endl;
+            std::cerr << currentAnimation.duration << std::endl;
+        }
+    }
+    AnimationCatalog& catalog;
+};
+
 struct WoodGatheringSystem
 {
     void run(Registry &registry, float deltaTime)

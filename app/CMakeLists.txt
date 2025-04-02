@@ -21,5 +21,5 @@ target_sources(wood-cutting PRIVATE
     FontRendering/BMFont.h
 )
 
-target_link_libraries(wood-cutting PRIVATE glfw OpenGL::GL glad glm stb_image)
+target_link_libraries(wood-cutting PRIVATE glfw OpenGL::GL glad glm stb_image nlohmann_json::nlohmann_json)
 target_include_directories(wood-cutting PRIVATE ${PROJECT_SOURCE_DIR})

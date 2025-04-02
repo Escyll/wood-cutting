@@ -24,6 +24,7 @@ int main(int argc, char *argv[])
     glfwSetKeyCallback(window, keyCallback);
 
     auto textureCatalog = createTextureCatalog("assets/textures");
+    auto animationCatalog = createAnimationCatalog("assets/textures");
     auto fontTextureCatalog = createTextureCatalog("assets/fonts");
     auto font = loadBMFont("assets/fonts/ComicSans80/ComicSans80.fnt");
 
@@ -73,6 +74,7 @@ int main(int argc, char *argv[])
     registry.insert<Pos>(tink, Pos{25, 20});
     registry.insert<Pos>(george, Pos{18, 7});
     registry.insert<glm::ivec2>(oven, {30, 30});
+    registry.insert<ActiveAnimation>(tink, { "Cute_Fantasy_Free/Player/RunDown", 0 });
 
     MovementSystem movementSystem { gameState };
     movementSystem.tink = tink;
@@ -87,6 +89,8 @@ int main(int argc, char *argv[])
     missionSystem.tink = tink;
     missionSystem.george = george;
     missionSystem.oven = oven;
+
+    AnimationSystem animationSystem { animationCatalog };
     
     loadLevel(registry);
 
@@ -108,6 +112,7 @@ int main(int argc, char *argv[])
         clayGatheringSystem.run(registry, timeDelta);
         glazeGatheringSystem.run(registry, timeDelta);
         missionSystem.run(registry, timeDelta);
+        animationSystem.run(registry, timeDelta);
 
         glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
