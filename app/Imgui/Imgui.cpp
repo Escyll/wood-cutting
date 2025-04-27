@@ -32,6 +32,28 @@ namespace Imgui {
     };
     Context context;
 
+    struct Pos {
+        int x;
+        int y;
+    };
+
+    struct Region {
+        int x;
+        int y;
+        int width;
+        int height;
+    };
+
+    bool inBetween(int value, int min, int max)
+    {
+        return min <= value && value < max;
+    }
+
+    bool inRegion(const Pos& pos, const Region& region)
+    {
+        return inBetween(pos.x, region.x, region.x + region.width) && inBetween(pos.y, region.y, region.y + region.height);
+    }
+
     void begin(unsigned int shaderId, RenderData renderData, int mouseX, int mouseY, bool mouseDown)
     {
         context.mouseX = mouseX;
@@ -62,9 +84,16 @@ namespace Imgui {
             context.panels[name] = panel;
         }
         context.currentPanel = name;
-        context.panels[name].layout.elementCount = 0;
-        context.panels[name].layout.width = 0;
-        context.panels[name].layout.height = 0;
+        Panel& panel = context.panels[name];
+        panel.layout.elementCount = 0;
+        panel.layout.width = 0;
+        panel.layout.height = 0;
+
+        if (context.activeElement == name)
+        {
+            panel.x += context.mouseX - context.previousMouseX;
+            panel.y += context.mouseY - context.previousMouseY;
+        }
     }
 
     void panelEnd()
@@ -76,8 +105,9 @@ namespace Imgui {
         material.shader = context.shaderId;
         material.renderData = context.renderData;
         material.uniform4fs["color"] = panel.color;
+        // TODO: Add projection and view support to render context
         material.uniformMatrix4fvs["projection"] = glm::ortho(0.f, 1920.f, 1080.f, 0.f, -100.f, 100.f);
-        material.uniformMatrix4fvs["view"] = glm::mat4(1.0f); // TODO This should be view now
+        material.uniformMatrix4fvs["view"] = glm::mat4(1.0f);
         Render::setSubLayer(0);
         Render::setMaterial(material);
 
@@ -89,17 +119,16 @@ namespace Imgui {
 
         Render::queue({ {x, y}, {x + width, y}, {x + width, y + height}, {x + width, y + height}, {x, y + height}, {x, y} });
         context.currentPanel = "";
+
+        bool underMouse = inRegion({context.mouseX, context.mouseY}, {x, y, width, height});
+        if (context.activeElement == "" && underMouse && context.mouseDown)
+        {
+            context.activeElement = panel.name;
+        }
     }
 
-    bool inBetween(int value, int min, int max)
+    Pos claimSpot(int width, int height)
     {
-        return min <= value && value < max;
-    }
-
-    bool button(const std::string& name, int width, int height)
-    {
-        auto mouseX = context.mouseX;
-        auto mouseY = context.mouseY;
         Panel& panel = context.panels[context.currentPanel];
         Layout& layout = panel.layout;
         int positionedX = layout.type == Layout::Column ? 0 : (layout.elementCount == 0 ? 0 : layout.width + layout.spacing);
@@ -109,8 +138,17 @@ namespace Imgui {
         layout.elementCount++;
         int x = panel.x + panel.padding + positionedX;
         int y = panel.y + panel.padding + positionedY;
+        return {x, y};
+    }
 
-        bool underMouse = inBetween(mouseX, x, x + width) && inBetween(mouseY, y, y + height);
+    bool button(const std::string& name, int width, int height)
+    {
+        auto mouseX = context.mouseX;
+        auto mouseY = context.mouseY;
+
+        auto [x, y] = claimSpot(width, height);
+
+        bool underMouse = inRegion({mouseX, mouseY}, {x, y, width, height});
         if (underMouse && context.mouseDown && context.activeElement == "")
         {
             context.activeElement = name;
