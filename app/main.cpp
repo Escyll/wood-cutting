@@ -3,6 +3,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <cmath>
 
+#include "Platform.h"
 #include "Renderer/Renderer.h"
 #include "ECS/ECS.h"
 #include "ECS/Systems/Systems.h"
@@ -13,6 +14,7 @@
 #include "Geometry.h"
 #include "Catalog.h"
 #include "FontRendering/BMFont.h"
+#include "Imgui/Imgui.h"
 
 int main(int argc, char *argv[])
 {
@@ -49,6 +51,7 @@ int main(int argc, char *argv[])
     RenderData charRenderData { charVAO, charPosBuffer.handle, charTexBuffer.handle, GL_TRIANGLES };
     RenderData tileRenderData { tileVAO, tileBuffer.handle, tileTexBuffer.handle, GL_TRIANGLES };
     RenderData tileLineRenderData { tileLineVAO, tileBuffer.handle, 0, GL_LINES };
+    RenderData shapeRenderData { tileLineVAO, tileBuffer.handle, 0, GL_TRIANGLES };
 
     GameState gameState;
     gameState.mission = Missions::START;
@@ -74,7 +77,7 @@ int main(int argc, char *argv[])
     registry.insert<Pos>(tink, Pos{25, 20});
     registry.insert<Pos>(george, Pos{18, 7});
     registry.insert<glm::ivec2>(oven, {30, 30});
-    registry.insert<ActiveAnimation>(tink, { "Cute_Fantasy_Free/Player/RunDown", 0 });
+    registry.insert<AnimationState>(tink, { "Cute_Fantasy_Free/Player/RunDown", 0 });
 
     MovementSystem movementSystem { gameState };
     movementSystem.tink = tink;
@@ -120,6 +123,38 @@ int main(int argc, char *argv[])
         tileSystem.run(registry, timeDelta);
         tileEditingSystem.run(registry, timeDelta);
         dialogSystem.run(registry, timeDelta);
+
+        auto [mouseX, mouseY, mousePressed] = mouseState(window);
+
+        Imgui::begin(unlitColorShader, shapeRenderData, mouseX, mouseY, mousePressed);
+        Imgui::panelBegin("MyPanel", {0.8, 0.8, 0.8, 1.0}, 10, 10, {Imgui::Layout::Column});
+
+        if (Imgui::button("MyButton 1", 200, 100))
+        {
+            std::cerr << "Button press of MyButton 1 detected" << std::endl;
+        }
+
+        if (Imgui::button("MyButton 2", 150, 100))
+        {
+            std::cerr << "Button press of MyButton 2 detected" << std::endl;
+        }
+
+        Imgui::panelEnd();
+
+        Imgui::panelBegin("MyPanel 2", {0.8, 0.8, 0.8, 1.0}, 1000, 10, {Imgui::Layout::Row});
+
+        if (Imgui::button("MyButton 3", 200, 80))
+        {
+            std::cerr << "Button press of MyButton 3 detected" << std::endl;
+        }
+
+        if (Imgui::button("MyButton 4", 200, 100))
+        {
+            std::cerr << "Button press of MyButton 4 detected" << std::endl;
+        }
+
+        Imgui::panelEnd();
+        Imgui::end();
 
         glfwSwapBuffers(window);
     }

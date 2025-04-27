@@ -235,7 +235,7 @@ private:
     int nextEntity = 1;
 };
 
-Entity Registry::create()
+inline Entity Registry::create()
 {
     Entity entity = nextEntity++;
     return entity;
