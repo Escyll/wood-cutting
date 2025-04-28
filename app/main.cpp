@@ -127,7 +127,7 @@ int main(int argc, char *argv[])
         auto [mouseX, mouseY, mousePressed] = mouseState(window);
 
         Imgui::begin(unlitColorShader, shapeRenderData, mouseX, mouseY, mousePressed);
-        Imgui::panelBegin("MyPanel", {0.8, 0.8, 0.8, 1.0}, 10, 10, {Imgui::Layout::Column});
+        Imgui::panelBegin("MyPanel", 10, 10, {Imgui::Layout::Column});
 
         if (Imgui::button("MyButton 1", 200, 100))
         {
@@ -141,7 +141,7 @@ int main(int argc, char *argv[])
 
         Imgui::panelEnd();
 
-        Imgui::panelBegin("MyPanel 2", {0.8, 0.8, 0.8, 1.0}, 1000, 10, {Imgui::Layout::Row});
+        Imgui::panelBegin("MyPanel 2", 1000, 10, {Imgui::Layout::Row});
 
         if (Imgui::button("MyButton 3", 200, 80))
         {

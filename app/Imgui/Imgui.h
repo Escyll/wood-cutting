@@ -26,7 +26,7 @@ namespace Imgui {
     void begin(unsigned int shaderId, RenderData renderData, int mouseX, int mouseY, bool mouseDown);
     void end();
     
-    void panelBegin(const std::string& name, const glm::vec4& color, int x, int y, const Layout& layout, int padding = 4);
+    void panelBegin(const std::string& name, int x, int y, const Layout& layout, int padding = 4);
     void panelEnd();
     bool button(const std::string& name, int width, int height);
 }

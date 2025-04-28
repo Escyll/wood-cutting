@@ -7,14 +7,70 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 namespace Imgui {
-
+    
     struct Panel {
         std::string name;
-        glm::vec4 color;
         int x = 0;
         int y = 0;
         int padding = 4;
         Layout layout;
+    };
+
+    union Color
+    {
+        uint32_t hex;
+
+        struct { unsigned char a: 8, b: 8, g: 8, r: 8; };
+    };
+
+    glm::vec4 toVec4(const Color& c)
+    {
+        return { c.r / 255.f, c.g / 255.f, c.b / 255.f, c.a / 255.f };
+    }
+
+    struct Palette {
+        Color e100;
+        Color e200;
+        Color e300;
+        Color e400;
+        Color e500;
+        Color e600;
+        Color e700;
+        Color e800;
+        Color e900;
+    };
+
+    Palette greyPalette {
+        .e100 { 0xf3f4f8ff },
+        .e200 { 0xd2d4daff },
+        .e300 { 0xb3b5bdff },
+        .e400 { 0x9496a1ff },
+        .e500 { 0x777986ff },
+        .e600 { 0x5b5d6bff },
+        .e700 { 0x404252ff },
+        .e800 { 0x282a3aff },
+        .e900 { 0x101223ff }
+    };
+
+    struct Theme {
+        Color panelColor;
+        Color buttonColor;
+        Color buttonHoverColor;
+        Color buttonPressedColor;
+    };
+
+    Theme lavender {
+        .panelColor { 0x28282bff },
+        .buttonColor { 0xa973d9ff },
+        .buttonHoverColor { 0x9355c8ff },
+        .buttonPressedColor { 0x7e42aeff }
+    };
+
+    Theme grey {
+        .panelColor { greyPalette.e700 },
+        .buttonColor { greyPalette.e300 },
+        .buttonHoverColor { greyPalette.e400 },
+        .buttonPressedColor { greyPalette.e500 }
     };
 
     struct Context {
@@ -29,6 +85,8 @@ namespace Imgui {
         std::unordered_map<std::string, Panel> panels;
         std::string draggedPanel;
         std::string currentPanel;
+        Theme theme = grey;
+        int zOrder = 0;
     };
     Context context;
 
@@ -61,6 +119,7 @@ namespace Imgui {
         context.mouseDown = mouseDown;
         context.shaderId = shaderId;
         context.renderData = renderData;
+        context.zOrder = 0;
         Render::flush();
         Render::printGLDebug("Rendering UI");
     }
@@ -76,11 +135,11 @@ namespace Imgui {
         Render::flush();
     }
 
-    void panelBegin(const std::string& name, const glm::vec4& color, int x, int y, const Layout& layout, int padding)
+    void panelBegin(const std::string& name, int x, int y, const Layout& layout, int padding)
     {
         if (not context.panels.contains(name))
         {
-            Panel panel = { name, color, x, y, padding, layout };
+            Panel panel = { name, x, y, padding, layout };
             context.panels[name] = panel;
         }
         context.currentPanel = name;
@@ -88,6 +147,8 @@ namespace Imgui {
         panel.layout.elementCount = 0;
         panel.layout.width = 0;
         panel.layout.height = 0;
+
+        Render::setLayer(++context.zOrder);
 
         if (context.activeElement == name)
         {
@@ -104,7 +165,7 @@ namespace Imgui {
         material.name = panel.name;
         material.shader = context.shaderId;
         material.renderData = context.renderData;
-        material.uniform4fs["color"] = panel.color;
+        material.uniform4fs["color"] = toVec4(context.theme.panelColor);
         // TODO: Add projection and view support to render context
         material.uniformMatrix4fvs["projection"] = glm::ortho(0.f, 1920.f, 1080.f, 0.f, -100.f, 100.f);
         material.uniformMatrix4fvs["view"] = glm::mat4(1.0f);
@@ -158,14 +219,14 @@ namespace Imgui {
         material.name = name;
         material.shader = context.shaderId;
         material.renderData = context.renderData;
-        glm::vec4 color { 0, 0, 1, 1 };
+        glm::vec4 color = toVec4(context.theme.buttonColor);
         if (underMouse)
         {
-            color = { 0, 1, 0, 1 };
+            color = toVec4(context.theme.buttonHoverColor);
         }
         if (context.activeElement == name)
         {
-            color = { 1, 0, 0, 1 };
+            color = toVec4(context.theme.buttonPressedColor);
         }
         material.uniform4fs["color"] = color;
         material.uniformMatrix4fvs["projection"] = glm::ortho(0.f, 1920.f, 1080.f, 0.f, -100.f, 100.f);
