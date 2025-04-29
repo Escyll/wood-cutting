@@ -35,12 +35,16 @@ void setUniform(unsigned int shader, const std::string& name, const glm::mat4& m
 void renderText(const std::string& text, BMFont& font, unsigned int texBuffer, unsigned int shader, unsigned int texture, float screenScale, float screenLineHeight, RenderData& renderData)
 {
     glm::vec2 imageScale { 1.f / font.common.scaleW, 1.f / font.common.scaleH };
-    setUniform(shader, "texture1", 0);
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, texture);
-    glBindBuffer(GL_ARRAY_BUFFER, texBuffer);
     float xadvance = 0;
     float yadvance = 0;
+    Render::printGLDebug("Rendering letters");
+    Render::Material material;
+    material.name = "Letter";
+    material.shader = shader;
+    material.uniformMatrix4fvs["view"] = glm::mat4(1.0f);
+    material.renderData = renderData;
+    material.texture = texture;
+    Render::setMaterial(material);
     for (char letter : text)
     {
         if (letter == '\n')
@@ -50,19 +54,27 @@ void renderText(const std::string& text, BMFont& font, unsigned int texBuffer, u
             continue;
         }
         BMFontChar& ch = font.chars[letter];
-        std::array<glm::vec2, 4> texCoords;
-        texCoords[0] = imageScale*glm::vec2{ch.x + 1, ch.y + 1};
-        texCoords[1] = imageScale*glm::vec2{ch.x+ch.width - 1, ch.y + 1};
-        texCoords[2] = imageScale*glm::vec2{ch.x+ch.width - 1, ch.y + ch.height - 1};
-        texCoords[3] = imageScale*glm::vec2{ch.x + 1, ch.y + ch.height - 1};
-        glBufferSubData(GL_ARRAY_BUFFER, 0, 4*sizeof(glm::vec2), &texCoords[0]); 
+        auto sh = font.common.scaleH;
+        std::vector<glm::vec2> texCoords {
+            imageScale*glm::vec2{ch.x + 1, sh - (ch.y + 1)},
+            imageScale*glm::vec2{ch.x+ch.width - 1, sh - (ch.y + 1)},
+            imageScale*glm::vec2{ch.x+ch.width - 1, sh - (ch.y + ch.height - 1)},
+            imageScale*glm::vec2{ch.x+ch.width - 1, sh - (ch.y + ch.height - 1)},
+            imageScale*glm::vec2{ch.x + 1, sh - (ch.y + ch.height - 1)},
+            imageScale*glm::vec2{ch.x + 1, sh - (ch.y + 1)}
+        };
         
         auto model = glm::translate(glm::mat4(1.0f), glm::vec3(xadvance + ch.xoffset, yadvance + ch.yoffset, 0.f));
         model = glm::scale(model, glm::vec3((float)ch.width / font.common.lineHeight, (float)ch.height / font.common.lineHeight, 1.0));
-        setUniform(shader, "model", model);
-        // render(renderData); TODO Fix me
+        auto posX = (float) xadvance + ch.xoffset;
+        auto posY = (float) yadvance + ch.yoffset;
+        auto width = (float)ch.width ;
+        auto height = (float)ch.height;
+        std::vector<glm::vec2> pos { {posX, posY}, {posX + width, posY}, {posX + width, posY + height}, {posX + width, posY + height}, {posX, posY + height}, {posX, posY}};
+        Render::queue(pos, texCoords);
         xadvance += ch.xadvance;
     }
+    Render::flush();
 }
 
 [[nodiscard]] BufferData bufferData(const std::vector<glm::vec2>& data) 
