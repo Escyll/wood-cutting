@@ -3,17 +3,41 @@
 #include <iostream>
 #include <string>
 #include <unordered_map>
+#include <queue>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
 namespace Imgui {
     
+    struct Pos {
+        int x;
+        int y;
+        Pos& operator+=(const Pos& rhs)
+        {
+            x += rhs.x;
+            y += rhs.y;
+            return *this;
+        }
+    };
+
+    Pos operator+(const Pos& lhs, const Pos& rhs)
+    {
+        return {lhs.x + rhs.x, lhs.y + rhs.y};
+    }
+
+    struct Layout {
+        LayoutStyle style;
+        int width = 0;
+        int height = 0;
+        Pos offset = {0, 0};
+        Pos orig = {0, 0};
+    };
+
     struct Panel {
         std::string name;
-        int x = 0;
-        int y = 0;
+        Pos pos = {0, 0};
         int padding = 4;
-        Layout layout;
+        int headerHeight = 32;
     };
 
     union Color
@@ -83,17 +107,13 @@ namespace Imgui {
         unsigned int shaderId;
         RenderData renderData;
         std::unordered_map<std::string, Panel> panels;
+        std::queue<Layout> layoutStack;
         std::string draggedPanel;
         std::string currentPanel;
         Theme theme = grey;
         int zOrder = 0;
     };
     Context context;
-
-    struct Pos {
-        int x;
-        int y;
-    };
 
     struct Region {
         int x;
@@ -135,31 +155,36 @@ namespace Imgui {
         Render::flush();
     }
 
-    void panelBegin(const std::string& name, int x, int y, const Layout& layout, int padding)
+    void panelBegin(const std::string& name, int x, int y, const LayoutStyle& layoutStyle, int padding)
     {
         if (not context.panels.contains(name))
         {
-            Panel panel = { name, x, y, padding, layout };
+            Panel panel = { name, x, y, padding };
             context.panels[name] = panel;
         }
         context.currentPanel = name;
         Panel& panel = context.panels[name];
-        panel.layout.elementCount = 0;
-        panel.layout.width = 0;
-        panel.layout.height = 0;
+        Layout layout{layoutStyle};
+        layout.orig = panel.pos + Pos{ panel.padding, panel.padding + panel.headerHeight };
+        context.layoutStack.push(layout);
 
         Render::setLayer(++context.zOrder);
 
         if (context.activeElement == name)
         {
-            panel.x += context.mouseX - context.previousMouseX;
-            panel.y += context.mouseY - context.previousMouseY;
+            panel.pos += Pos{ context.mouseX - context.previousMouseX, context.mouseY - context.previousMouseY };
         }
     }
 
     void panelEnd()
     {
         Panel& panel = context.panels[context.currentPanel];
+        auto layout = context.layoutStack.front();
+        context.layoutStack.pop();
+        int x = panel.pos.x;
+        int y = panel.pos.y;
+        int width = 2*panel.padding + layout.width;
+        int height = 2*panel.padding + panel.headerHeight + layout.height;
 
         Render::Material material;
         material.name = panel.name;
@@ -171,12 +196,6 @@ namespace Imgui {
         material.uniformMatrix4fvs["view"] = glm::mat4(1.0f);
         Render::setSubLayer(0);
         Render::setMaterial(material);
-
-        Layout& layout = panel.layout;
-        int x = panel.x;
-        int y = panel.y;
-        int width = 2*panel.padding + layout.width;
-        int height = 2*panel.padding + layout.height;
 
         Render::queue({ {x, y}, {x + width, y}, {x + width, y + height}, {x + width, y + height}, {x, y + height}, {x, y} });
         context.currentPanel = "";
@@ -190,16 +209,12 @@ namespace Imgui {
 
     Pos claimSpot(int width, int height)
     {
-        Panel& panel = context.panels[context.currentPanel];
-        Layout& layout = panel.layout;
-        int positionedX = layout.type == Layout::Column ? 0 : (layout.elementCount == 0 ? 0 : layout.width + layout.spacing);
-        int positionedY = layout.type == Layout::Row ? 0 : (layout.elementCount == 0 ? 0 : (layout.height + layout.spacing));
-        layout.height = layout.type == Layout::Column ? layout.height + (layout.elementCount == 0 ? height : (layout.spacing + height)) : std::max(layout.height, height);
-        layout.width = layout.type == Layout::Row ? layout.width + (layout.elementCount == 0 ? width : layout.spacing + width) : std::max(layout.width, width);
-        layout.elementCount++;
-        int x = panel.x + panel.padding + positionedX;
-        int y = panel.y + panel.padding + positionedY;
-        return {x, y};
+        Layout& layout = context.layoutStack.front();
+        Pos result =  { layout.orig.x + layout.offset.x, layout.orig.y + layout.offset.y };
+        layout.width = layout.style.type == LayoutStyle::Row ? layout.offset.x + width : std::max(width, layout.width);
+        layout.height = layout.style.type == LayoutStyle::Column ? layout.offset.y + height : std::max(height, layout.height);
+        layout.offset += layout.style.type == LayoutStyle::Row ? Pos{ width + layout.style.spacing, 0 } : Pos{ 0, height + layout.style.spacing };
+        return result;
     }
 
     bool button(const std::string& name, int width, int height)
