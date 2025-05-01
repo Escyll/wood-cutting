@@ -587,7 +587,7 @@ void DialogSystem::run(Registry& registry, float deltaTime)
     projection = glm::scale(projection, glm::vec3(0.5f, 0.5f, 1.f));
     setUniform(unlitTextureShader, "projection", projection);
     auto comicSansTexture = getTexture(fontTextureCatalog, "ComicSans80/ComicSans80_0.png");
-    renderText(dialog, font, charTexBuffer, unlitTextureShader, comicSansTexture, 1.f / 1080.f, font.common.lineHeight, charRenderData);
+    renderText(dialog, font, unlitTextureShader, comicSansTexture, charRenderData);
 }
 
 void MissionSystem::run(Registry &registry, float deltaTime)

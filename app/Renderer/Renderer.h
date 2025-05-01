@@ -25,7 +25,7 @@ unsigned int getLoc(unsigned int shader, const std::string& name);
 void setUniform(unsigned int shader, const std::string& name, int value);
 void setUniform(unsigned int shader, const std::string& name, const glm::vec4& vec);
 void setUniform(unsigned int shader, const std::string& name, const glm::mat4& mat);
-void renderText(const std::string& text, BMFont& font, unsigned int texBuffer, unsigned int shader, unsigned int texture, float screenScale, float screenLineHeight, RenderData& renderData);
+void renderText(const std::string& text, BMFont& font, unsigned int shader, unsigned int texture, RenderData& renderData);
 
 [[nodiscard]] BufferData bufferData(const std::vector<glm::vec2>& data) ;
 [[nodiscard]] BufferData bufferIndexData(const std::vector<unsigned int>& data);

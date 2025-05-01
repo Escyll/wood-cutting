@@ -32,7 +32,7 @@ void setUniform(unsigned int shader, const std::string& name, const glm::mat4& m
     glUniformMatrix4fv(getLoc(shader, name), 1, GL_FALSE, glm::value_ptr(mat));
 }
 
-void renderText(const std::string& text, BMFont& font, unsigned int texBuffer, unsigned int shader, unsigned int texture, float screenScale, float screenLineHeight, RenderData& renderData)
+void renderText(const std::string& text, BMFont& font, unsigned int shader, unsigned int texture, RenderData& renderData)
 {
     glm::vec2 imageScale { 1.f / font.common.scaleW, 1.f / font.common.scaleH };
     float xadvance = 0;

@@ -198,6 +198,7 @@ namespace Imgui {
         Render::setMaterial(material);
 
         Render::queue({ {x, y}, {x + width, y}, {x + width, y + height}, {x + width, y + height}, {x, y + height}, {x, y} });
+
         context.currentPanel = "";
 
         bool underMouse = inRegion({context.mouseX, context.mouseY}, {x, y, width, height});
