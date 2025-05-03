@@ -44,12 +44,17 @@ void MovementSystem::run(Registry &registry, float deltaTime)
     }
     if (glm::length(displacement) > 0.1f)
     {
-        auto newPos = pos + speed * deltaTime * glm::normalize(displacement);
+        auto worldDisplacement = speed * deltaTime * glm::normalize(displacement);
+        auto newPos = pos + worldDisplacement;
         glm::ivec2 tilePos { newPos.x, newPos.y };
         for (auto [_, pos, __] : registry.each<glm::ivec2, Blocked>())
         {
             if (pos == tilePos)
                 return;
+        }
+        if (camera)
+        {
+            camera->position += worldDisplacement;
         }
         pos = newPos;
     }
@@ -401,10 +406,9 @@ void TileEditingSystem::run(Registry &registry, float deltaTime)
     Render::Material mat;
     mat.name = "Grid";
     mat.shader = unlitColorShader;
-    mat.uniformMatrix4fvs["projection"] = glm::ortho(0.f, 30*1920.f/1080.f, 30.f, 0.f, -100.f, 100.f);
-    mat.uniformMatrix4fvs["view"] = glm::translate(glm::mat4(1.0f), glm::vec3(-0.5f, -0.5f, 0.0f));
     mat.renderData = lineRenderData;
 
+    Render::setCamera(camera);
     Render::setLayer(1);
 
     for (auto [tileEntity, pos, type]: registry.each<glm::ivec2, TileType>())
@@ -517,10 +521,9 @@ void TileSystem::run(Registry &registry, float deltaTime)
     Render::Material mat;
     mat.name = "Base";
     mat.shader = unlitTextureShader;
-    mat.uniform1is["texture1"] = 0;
-    mat.uniformMatrix4fvs["projection"] = glm::ortho(0.f, 30*1920.f/1080.f, 0.f, 30.f, -100.f, 100.f);
-    mat.uniformMatrix4fvs["view"] = glm::translate(glm::mat4(1.0f), glm::vec3(-0.5f, -0.5f, 0.0f));
     mat.renderData = tileRenderData;
+
+    Render::setCamera(camera);
 
     for (auto [tileEntity, pos, type, layer]: registry.each<glm::ivec2, TileType, Layer>())
     {
@@ -581,11 +584,7 @@ void TileSystem::run(Registry &registry, float deltaTime)
 void DialogSystem::run(Registry& registry, float deltaTime)
 {
     glUseProgram(unlitTextureShader);
-    auto projection = glm::ortho(0.0f, 1920.0f, 1080.0f, 0.0f);
-    auto position = Pos{10.f, 1080.f - font.common.lineHeight - 10};
-    projection = glm::translate(projection, glm::vec3(position.x, position.y, 0.f));
-    projection = glm::scale(projection, glm::vec3(0.5f, 0.5f, 1.f));
-    setUniform(unlitTextureShader, "projection", projection);
+    Render::setCamera(camera);
     auto comicSansTexture = getTexture(fontTextureCatalog, "ComicSans80/ComicSans80_0.png");
     renderText(dialog, font, unlitTextureShader, comicSansTexture, charRenderData);
 }

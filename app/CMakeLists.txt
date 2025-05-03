@@ -18,6 +18,8 @@ target_sources(wood-cutting
         ECS/Systems/InputSystem.cpp
         ECS/Systems/Systems.h
         ECS/Systems/Systems.cpp
+        Renderer/Camera.h
+        Renderer/Camera.cpp
         Renderer/Renderer.h
         Renderer/Renderer.cpp
         Renderer/Window.h

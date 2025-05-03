@@ -4,6 +4,7 @@
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 
+#include "Renderer/Camera.h"
 #include "FontRendering/BMFont.h"
 
 struct RenderData
@@ -66,11 +67,13 @@ struct RenderContext
     int activeLayer = 0;
     float activeSubLayer = 0;
     Material activeMaterial = {};
+    Camera* activeCamera = nullptr;
 };
 
 void setLayer(int layer);
 void setSubLayer(float subLayer);
 void setMaterial(const Material& material);
+void setCamera(Camera* camera);
 void queue(const std::vector<glm::vec2>& newPositions);
 void queue(const std::vector<glm::vec2>& newPositions, const std::vector<glm::vec2>& newTexCoords);
 void printGLDebug(const std::string& message);

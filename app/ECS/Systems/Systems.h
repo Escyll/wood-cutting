@@ -136,6 +136,7 @@ struct MovementSystem
     GameState& gameState;
     float speed = 4.f;
     Entity tink;
+    Render::Camera* camera = nullptr;
 };
 
 void loadLevel(Registry& registry);
@@ -152,6 +153,7 @@ struct TileEditingSystem
     glm::ivec2 selectedPosition {-1, -1};
     TileType selectedTileType;
     Entity tink;
+    Render::Camera* camera = nullptr;
 };
 
 struct AtlasInfo
@@ -178,6 +180,7 @@ struct TileSystem
     unsigned int texBuffer;
     RenderData tileRenderData;
     Entity tink, george;
+    Render::Camera* camera = nullptr;
 };
 
 struct DialogSystem
@@ -190,6 +193,7 @@ struct DialogSystem
     unsigned int comicSansTexture;
     RenderData charRenderData;
     std::string dialog = "";
+    Render::Camera* camera = nullptr;
 };
 
 struct MissionSystem

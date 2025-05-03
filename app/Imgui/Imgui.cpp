@@ -108,7 +108,6 @@ namespace Imgui {
         RenderData renderData;
         std::unordered_map<std::string, Panel> panels;
         std::queue<Layout> layoutStack;
-        std::string draggedPanel;
         std::string currentPanel;
         Theme theme = grey;
         int zOrder = 0;

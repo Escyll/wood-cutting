@@ -53,6 +53,9 @@ int main(int argc, char *argv[])
     RenderData tileLineRenderData { tileLineVAO, tileBuffer.handle, 0, GL_LINES };
     RenderData shapeRenderData { tileLineVAO, tileBuffer.handle, 0, GL_TRIANGLES };
 
+    Render::Camera sceneCamera { glm::vec3(0.f), Render::createProjection({1920, 1080}, 50, -100, 100) };
+    Render::Camera uiCamera { glm::vec3(0.f), glm::ortho(0.f, 1920.f, 1080.f, 0.f) };
+
     GameState gameState;
     gameState.mission = Missions::START;
 
@@ -61,10 +64,12 @@ int main(int argc, char *argv[])
     tileSystem.posBuffer = tileBuffer.handle;
     tileSystem.texBuffer = tileTexBuffer.handle;
     tileSystem.tileRenderData = tileRenderData;
+    tileSystem.camera = &sceneCamera;
 
     TileEditingSystem tileEditingSystem { gameState };
     tileEditingSystem.unlitColorShader = unlitColorShader;
     tileEditingSystem.lineRenderData = tileLineRenderData;
+    tileEditingSystem.camera = &sceneCamera;
 
     Registry registry;
     Entity tink = registry.create();
@@ -81,6 +86,7 @@ int main(int argc, char *argv[])
 
     MovementSystem movementSystem { gameState };
     movementSystem.tink = tink;
+    movementSystem.camera = &sceneCamera;
     WoodGatheringSystem woodGatheringSystem{tink, gameState};
     ClayGatheringSystem clayGatheringSystem{tink, gameState};
     GlazeGatheringSystem glazeGatheringSystem{tink, gameState};
@@ -88,6 +94,7 @@ int main(int argc, char *argv[])
     dialogSystem.unlitTextureShader = unlitTextureShader;
     dialogSystem.charTexBuffer = charTexBuffer.handle;
     dialogSystem.charRenderData = charRenderData;
+    dialogSystem.camera = &uiCamera;
     MissionSystem missionSystem { gameState, dialogSystem };
     missionSystem.tink = tink;
     missionSystem.george = george;

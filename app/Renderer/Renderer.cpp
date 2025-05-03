@@ -1,5 +1,7 @@
 #include "Renderer/Renderer.h"
 
+#include <iostream>
+
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -167,6 +169,11 @@ void setMaterial(const Material& material)
     renderContext.layers[renderContext.activeLayer].subLayers[renderContext.activeSubLayer].materials[material.name] = material;
 }
 
+void setCamera(Camera* camera)
+{
+    renderContext.activeCamera = camera;
+}
+
 void queue(const std::vector<glm::vec2>& newPositions)
 {
     auto& subLayer = renderContext.layers[renderContext.activeLayer].subLayers[renderContext.activeSubLayer];
@@ -190,6 +197,12 @@ void printGLDebug(const std::string& message)
 
 void flush()
 {
+    auto camera = renderContext.activeCamera;
+    if (not camera)
+    {
+        std::cerr << "No active camera, can't render" << std::endl;
+        return;
+    }
     for (auto& [layerNumber, layer] : renderContext.layers)
     {
         printGLDebug(std::string("Layer ") + std::to_string(layerNumber));
@@ -200,6 +213,10 @@ void flush()
             {
                 printGLDebug(std::string("Material ") + materialName);
                 glUseProgram(material.shader);
+                setUniform(material.shader, "projection", camera->projection);
+                glm::vec3 camPos3 { camera->position.x, camera->position.y, 0.f };
+                auto view = glm::translate(glm::mat4(1.0f), -camPos3);
+                setUniform(material.shader, "view", view);
                 for (auto& [uniformName, value] : material.uniform1is)
                 {
                     setUniform(material.shader, uniformName, value);
