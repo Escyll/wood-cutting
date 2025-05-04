@@ -111,6 +111,7 @@ namespace Imgui {
         std::string currentPanel;
         Theme theme = grey;
         int zOrder = 0;
+        Render::Camera* camera = nullptr;
     };
     Context context;
 
@@ -131,7 +132,7 @@ namespace Imgui {
         return inBetween(pos.x, region.x, region.x + region.width) && inBetween(pos.y, region.y, region.y + region.height);
     }
 
-    void begin(unsigned int shaderId, RenderData renderData, int mouseX, int mouseY, bool mouseDown)
+    void begin(unsigned int shaderId, RenderData renderData, int mouseX, int mouseY, bool mouseDown, Render::Camera* camera)
     {
         context.mouseX = mouseX;
         context.mouseY = mouseY;
@@ -139,8 +140,10 @@ namespace Imgui {
         context.shaderId = shaderId;
         context.renderData = renderData;
         context.zOrder = 0;
+        context.camera = camera;
         Render::flush();
         Render::printGLDebug("Rendering UI");
+        Render::setCamera(context.camera);
     }
     
     void end()
@@ -190,9 +193,6 @@ namespace Imgui {
         material.shader = context.shaderId;
         material.renderData = context.renderData;
         material.uniform4fs["color"] = toVec4(context.theme.panelColor);
-        // TODO: Add projection and view support to render context
-        material.uniformMatrix4fvs["projection"] = glm::ortho(0.f, 1920.f, 1080.f, 0.f, -100.f, 100.f);
-        material.uniformMatrix4fvs["view"] = glm::mat4(1.0f);
         Render::setSubLayer(0);
         Render::setMaterial(material);
 
@@ -244,9 +244,6 @@ namespace Imgui {
             color = toVec4(context.theme.buttonPressedColor);
         }
         material.uniform4fs["color"] = color;
-        material.uniformMatrix4fvs["projection"] = glm::ortho(0.f, 1920.f, 1080.f, 0.f, -100.f, 100.f);
-        material.uniformMatrix4fvs["view"] = glm::mat4(1.0f);
-
         Render::setSubLayer(1);
         Render::setMaterial(material);
         Render::queue({ {x, y}, {x + width, y}, {x + width, y + height}, {x + width, y + height}, {x, y + height}, {x, y} });

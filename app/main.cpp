@@ -25,9 +25,9 @@ int main(int argc, char *argv[])
 
     glfwSetKeyCallback(window, keyCallback);
 
-    auto textureCatalog = createTextureCatalog("assets/textures");
+    auto textureCatalog = createTextureCatalog("assets/textures", TEXTURE_FILTER::NEAREST);
     auto animationCatalog = createAnimationCatalog("assets/textures");
-    auto fontTextureCatalog = createTextureCatalog("assets/fonts");
+    auto fontTextureCatalog = createTextureCatalog("assets/fonts", TEXTURE_FILTER::LINEAR);
     auto font = loadBMFont("assets/fonts/ComicSans80/ComicSans80.fnt");
 
     auto unlitColorVertex = readFile("assets/shaders/unlit-color/vertex.glsl");
@@ -53,7 +53,7 @@ int main(int argc, char *argv[])
     RenderData tileLineRenderData { tileLineVAO, tileBuffer.handle, 0, GL_LINES };
     RenderData shapeRenderData { tileLineVAO, tileBuffer.handle, 0, GL_TRIANGLES };
 
-    Render::Camera sceneCamera { glm::vec3(0.f), Render::createProjection({1920, 1080}, 50, -100, 100) };
+    Render::Camera sceneCamera { glm::vec3(0.f), Render::createProjection({1920, 1080}, 80, -100, 100) };
     Render::Camera uiCamera { glm::vec3(0.f), glm::ortho(0.f, 1920.f, 1080.f, 0.f) };
 
     GameState gameState;
@@ -103,20 +103,27 @@ int main(int argc, char *argv[])
     AnimationSystem animationSystem { animationCatalog };
     
     loadLevel(registry);
+    
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    glfwSwapInterval(0);
+    glfwSwapInterval(1);
     auto previousFrame = 0.f;
     while (!glfwWindowShouldClose(window))
     {
-        markKeyStatesHold();
         glfwPollEvents();
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         auto currentFrame = glfwGetTime();
         auto timeDelta = currentFrame - previousFrame;
         previousFrame = currentFrame;
-
         processInput(window);
+        markKeyStatesHold();
+
+        if (not windowSizeChangeHandled)
+        {
+            sceneCamera.projection = Render::createProjection({windowSize.x, windowSize.y}, 40, -100, 100);
+            uiCamera.projection = glm::ortho(0.f, (float) windowSize.x, (float) windowSize.y, 0.f);
+            windowSizeChangeHandled = true;
+        }
         movementSystem.run(registry, timeDelta);
         woodGatheringSystem.run(registry, timeDelta);
         clayGatheringSystem.run(registry, timeDelta);
@@ -133,7 +140,7 @@ int main(int argc, char *argv[])
 
         auto [mouseX, mouseY, mousePressed] = mouseState(window);
 
-        Imgui::begin(unlitColorShader, shapeRenderData, mouseX, mouseY, mousePressed);
+        Imgui::begin(unlitColorShader, shapeRenderData, mouseX, mouseY, mousePressed, &uiCamera);
         Imgui::panelBegin("MyPanel", 10, 10, {Imgui::LayoutStyle::Column});
 
         if (Imgui::button("MyButton 1", 200, 100))

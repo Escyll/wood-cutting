@@ -9,7 +9,7 @@
 using TextureCatalog = std::map<std::string, unsigned int>;
 using AnimationCatalog = std::map<std::string, AnimationSequence>;
 
-TextureCatalog createTextureCatalog(const std::filesystem::path& location);
+TextureCatalog createTextureCatalog(const std::filesystem::path& location, TEXTURE_FILTER filter);
 unsigned int getTexture(TextureCatalog& catalog, const std::string& name);
 
 AnimationCatalog createAnimationCatalog(const std::filesystem::path& location);

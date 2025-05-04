@@ -54,7 +54,7 @@ void MovementSystem::run(Registry &registry, float deltaTime)
         }
         if (camera)
         {
-            camera->position += worldDisplacement;
+            camera->position = newPos;
         }
         pos = newPos;
     }

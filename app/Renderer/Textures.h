@@ -4,7 +4,13 @@
 #include <vector>
 #include <glm/glm.hpp>
 
-bool loadTexture(const std::string& path, unsigned int& texture);
+enum TEXTURE_FILTER
+{
+    LINEAR,
+    NEAREST
+};
+
+bool loadTexture(const std::string& path, unsigned int& texture, TEXTURE_FILTER filter);
 
 struct TextureRegion {
     glm::vec2 bottomLeft;

@@ -8,11 +8,11 @@ namespace Render {
         auto ratio = static_cast<float>(resolution.width) / resolution.height;
         if (resolution.width > resolution.height)
         {
-            return glm::ortho(0.f, maxFOV, 0.f, maxFOV / ratio, near, far);
+            return glm::ortho(-0.5f*maxFOV, 0.5f*maxFOV, -0.5f * maxFOV / ratio, 0.5f * maxFOV / ratio, near, far);
         }
         else
         {
-            return glm::ortho(0.f, maxFOV * ratio, maxFOV, 0.f, near, far);
+            return glm::ortho(-0.5f * maxFOV * ratio, 0.5f * maxFOV * ratio, -0.5f * maxFOV, 0.5f * maxFOV, near, far);
         }
     }
 }

@@ -16,7 +16,7 @@ namespace Imgui {
         int spacing = 4;
     };
 
-    void begin(unsigned int shaderId, RenderData renderData, int mouseX, int mouseY, bool mouseDown);
+    void begin(unsigned int shaderId, RenderData renderData, int mouseX, int mouseY, bool mouseDown, Render::Camera* camera);
     void end();
     
     void panelBegin(const std::string& name, int x, int y, const LayoutStyle& layoutStyle, int padding = 4);

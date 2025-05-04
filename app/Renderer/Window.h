@@ -1,9 +1,17 @@
 #ifndef WINDOW_H
 #define WINDOW_H
 
+#include <glm/glm.hpp>
+
+bool windowSizeChangeHandled = false;
+glm::ivec2 windowSize;
+
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
     glViewport(0, 0, width, height);
+    windowSize.x = width;
+    windowSize.y = height;
+    windowSizeChangeHandled = false;
 }
 
 void processInput(GLFWwindow* window)

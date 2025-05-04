@@ -4,11 +4,11 @@
 #include <iostream>
 #include <nlohmann/json.hpp>
 
-#include "Platform.h" //TODO: Move readFile out of Shaders.h
+#include "Platform.h"
 
 using TextureCatalog = std::map<std::string, unsigned int>;
 
-TextureCatalog createTextureCatalog(const std::filesystem::path& location)
+TextureCatalog createTextureCatalog(const std::filesystem::path& location, TEXTURE_FILTER filter)
 {
     namespace fs = std::filesystem;
     std::cerr << "\nBuilding texture catalog for " << location << std::endl;
@@ -20,7 +20,7 @@ TextureCatalog createTextureCatalog(const std::filesystem::path& location)
             auto relative = fs::relative(entry.path(), location).string();
             std::cerr << "Loading " << relative << std::endl;
             unsigned int textureName;
-            if (loadTexture(entry.path(), textureName))
+            if (loadTexture(entry.path(), textureName, filter))
             {
                 catalog[relative] = textureName;
             }
