@@ -18,6 +18,8 @@
 
 int main(int argc, char *argv[])
 {
+    glfwWindowHint(GLFW_SAMPLES, 4);
+
     auto window = initializeOpenGLAndCreateWindow();
 
     if (not window)
@@ -25,7 +27,7 @@ int main(int argc, char *argv[])
 
     glfwSetKeyCallback(window, keyCallback);
 
-    auto textureCatalog = createTextureCatalog("assets/textures", TEXTURE_FILTER::NEAREST);
+    auto textureCatalog = createTextureCatalog("assets/textures", TEXTURE_FILTER::LINEAR);
     auto animationCatalog = createAnimationCatalog("assets/textures");
     auto fontTextureCatalog = createTextureCatalog("assets/fonts", TEXTURE_FILTER::LINEAR);
     auto font = loadBMFont("assets/fonts/ComicSans80/ComicSans80.fnt");
@@ -106,6 +108,7 @@ int main(int argc, char *argv[])
     
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glEnable(GL_MULTISAMPLE);
 
     glfwSwapInterval(1);
     auto previousFrame = 0.f;
@@ -124,51 +127,53 @@ int main(int argc, char *argv[])
             uiCamera.projection = glm::ortho(0.f, (float) windowSize.x, (float) windowSize.y, 0.f);
             windowSizeChangeHandled = true;
         }
+
         movementSystem.run(registry, timeDelta);
-        woodGatheringSystem.run(registry, timeDelta);
-        clayGatheringSystem.run(registry, timeDelta);
-        glazeGatheringSystem.run(registry, timeDelta);
-        missionSystem.run(registry, timeDelta);
-        animationSystem.run(registry, timeDelta);
+
+        //woodGatheringSystem.run(registry, timeDelta);
+        //clayGatheringSystem.run(registry, timeDelta);
+        //glazeGatheringSystem.run(registry, timeDelta);
+        //missionSystem.run(registry, timeDelta);
+        //animationSystem.run(registry, timeDelta);
 
         glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         tileSystem.run(registry, timeDelta);
-        tileEditingSystem.run(registry, timeDelta);
-        dialogSystem.run(registry, timeDelta);
+        //tileEditingSystem.run(registry, timeDelta);
+        //dialogSystem.run(registry, timeDelta);
 
-        auto [mouseX, mouseY, mousePressed] = mouseState(window);
+        //auto [mouseX, mouseY, mousePressed] = mouseState(window);
 
-        Imgui::begin(unlitColorShader, shapeRenderData, mouseX, mouseY, mousePressed, &uiCamera);
-        Imgui::panelBegin("MyPanel", 10, 10, {Imgui::LayoutStyle::Column});
+        //Imgui::begin(unlitColorShader, shapeRenderData, mouseX, mouseY, mousePressed, &uiCamera);
+        //Imgui::panelBegin("MyPanel", 10, 10, {Imgui::LayoutStyle::Column});
 
-        if (Imgui::button("MyButton 1", 200, 100))
-        {
-            std::cerr << "Button press of MyButton 1 detected" << std::endl;
-        }
+        //if (Imgui::button("MyButton 1", 200, 100))
+        //{
+        //    std::cerr << "Button press of MyButton 1 detected" << std::endl;
+        //}
 
-        if (Imgui::button("MyButton 2", 150, 100))
-        {
-            std::cerr << "Button press of MyButton 2 detected" << std::endl;
-        }
+        //if (Imgui::button("MyButton 2", 150, 100))
+        //{
+        //    std::cerr << "Button press of MyButton 2 detected" << std::endl;
+        //}
 
-        Imgui::panelEnd();
+        //Imgui::panelEnd();
 
-        Imgui::panelBegin("MyPanel 2", 1000, 10, {Imgui::LayoutStyle::Row});
+        //Imgui::panelBegin("MyPanel 2", 1000, 10, {Imgui::LayoutStyle::Row});
 
-        if (Imgui::button("MyButton 3", 200, 80))
-        {
-            std::cerr << "Button press of MyButton 3 detected" << std::endl;
-        }
+        //if (Imgui::button("MyButton 3", 200, 80))
+        //{
+        //    std::cerr << "Button press of MyButton 3 detected" << std::endl;
+        //}
 
-        if (Imgui::button("MyButton 4", 200, 100))
-        {
-            std::cerr << "Button press of MyButton 4 detected" << std::endl;
-        }
+        //if (Imgui::button("MyButton 4", 200, 100))
+        //{
+        //    std::cerr << "Button press of MyButton 4 detected" << std::endl;
+        //}
 
-        Imgui::panelEnd();
-        Imgui::end();
+        //Imgui::panelEnd();
+        //Imgui::end();
 
         glfwSwapBuffers(window);
     }

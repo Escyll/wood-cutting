@@ -24,8 +24,10 @@ void MovementSystem::run(Registry &registry, float deltaTime)
 {
     if (editing || !gameState.allowMovement)
         return;
-    auto& pos = registry.get<Pos>(tink);
+    auto& posTink = registry.get<Pos>(tink);
     glm::vec2 displacement {0.f, 0.f};
+    posTink += Pos{0.01f, 0.01f};
+    camera->position = posTink;
     if (isHolded(GLFW_KEY_W))
     {
         displacement.y += 1;
@@ -45,7 +47,7 @@ void MovementSystem::run(Registry &registry, float deltaTime)
     if (glm::length(displacement) > 0.1f)
     {
         auto worldDisplacement = speed * deltaTime * glm::normalize(displacement);
-        auto newPos = pos + worldDisplacement;
+        auto newPos = posTink + worldDisplacement;
         glm::ivec2 tilePos { newPos.x, newPos.y };
         for (auto [_, pos, __] : registry.each<glm::ivec2, Blocked>())
         {
@@ -56,7 +58,7 @@ void MovementSystem::run(Registry &registry, float deltaTime)
         {
             camera->position = newPos;
         }
-        pos = newPos;
+        posTink = newPos;
     }
 }
 
