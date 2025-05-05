@@ -123,7 +123,7 @@ int main(int argc, char *argv[])
 
         if (not windowSizeChangeHandled)
         {
-            sceneCamera.projection = Render::createProjection({windowSize.x, windowSize.y}, 20, -100, 100);
+            sceneCamera.projection = Render::createProjection({windowSize.x, windowSize.y}, 40, -100, 100);
             uiCamera.projection = glm::ortho(0.f, (float) windowSize.x, (float) windowSize.y, 0.f);
             windowSizeChangeHandled = true;
         }

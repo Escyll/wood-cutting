@@ -20,9 +20,9 @@ TextureCatalog createTextureCatalog(const std::filesystem::path& location, TEXTU
             auto relative = fs::relative(entry.path(), location).string();
             std::cerr << "Loading " << relative << std::endl;
             unsigned int textureName;
-            if (loadTexture(entry.path(), textureName, filter))
+            if (loadTexture(entry.path().string(), textureName, filter))
             {
-                catalog[relative] = textureName;
+                catalog[toLinuxStyle(relative)] = textureName;
             }
             else 
             {
@@ -57,7 +57,7 @@ AnimationCatalog createAnimationCatalog(const std::filesystem::path& location)
         {
             auto relative = fs::relative(entry.path(), location);
             std::cerr << "Loading " << relative << std::endl;
-            auto file = readFile(entry.path());
+            auto file = readFile(entry.path().string());
             auto jsonAtlasDescriptor = json::parse(file);
             auto meta = jsonAtlasDescriptor["meta"];
             glm::ivec2 textureSize { meta["size"]["w"], meta["size"]["h"] };

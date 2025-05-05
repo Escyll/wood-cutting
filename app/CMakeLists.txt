@@ -13,6 +13,7 @@ target_sources(wood-cutting
         Catalog.h
         Catalog.cpp
         Geometry.h
+        Geometry.cpp
         ECS/ECS.h
         ECS/Systems/InputSystem.h
         ECS/Systems/InputSystem.cpp
