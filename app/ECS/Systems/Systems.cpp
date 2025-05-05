@@ -26,8 +26,6 @@ void MovementSystem::run(Registry &registry, float deltaTime)
         return;
     auto& posTink = registry.get<Pos>(tink);
     glm::vec2 displacement {0.f, 0.f};
-    posTink += Pos{0.01f, 0.01f};
-    camera->position = posTink;
     if (isHolded(GLFW_KEY_W))
     {
         displacement.y += 1;
@@ -562,7 +560,7 @@ void TileSystem::run(Registry &registry, float deltaTime)
         auto pos = registry.get<Pos>(george);
         auto texCoords = toTextureCoord({1, 8}, {6, 10}, {1, 1});
         auto posCoords = toPosCoord(pos, {3, 3}, {-1.5f, -2.f});
-        Render::setSubLayer(pos.y + 3);
+        Render::setSubLayer(pos.y);
         Render::setMaterial(mat); // TODO Should this be reset by layer and sublayer?
         Render::queue(posCoords, texCoords);
 
@@ -576,7 +574,7 @@ void TileSystem::run(Registry &registry, float deltaTime)
 
         texCoords = { bottomLeft, bottomRight, topRight, topRight, topLeft, bottomLeft };
         posCoords = toPosCoord(pos, {3, 3}, {-1.5f, -2.f});
-        Render::setSubLayer(pos.y + 3);
+        Render::setSubLayer(pos.y);
         Render::setMaterial(mat); // TODO Should this be reset by layer and sublayer?
         Render::queue(posCoords, texCoords);
     }
