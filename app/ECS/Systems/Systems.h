@@ -134,7 +134,7 @@ struct MovementSystem
 {
     void run(Registry &registry, float deltaTime);
     GameState& gameState;
-    float speed = 1.f;
+    float speed = 4.f;
     Entity tink;
     Render::Camera* camera = nullptr;
 };

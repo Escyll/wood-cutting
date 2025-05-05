@@ -110,7 +110,7 @@ int main(int argc, char *argv[])
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable(GL_MULTISAMPLE);
 
-    glfwSwapInterval(1);
+    glfwSwapInterval(0);
     auto previousFrame = 0.f;
     while (!glfwWindowShouldClose(window))
     {
@@ -134,7 +134,7 @@ int main(int argc, char *argv[])
         //clayGatheringSystem.run(registry, timeDelta);
         //glazeGatheringSystem.run(registry, timeDelta);
         //missionSystem.run(registry, timeDelta);
-        //animationSystem.run(registry, timeDelta);
+        animationSystem.run(registry, timeDelta);
 
         glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
