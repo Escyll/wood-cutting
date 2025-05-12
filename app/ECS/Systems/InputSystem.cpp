@@ -43,12 +43,3 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
             break;
     }
 }
-
-MouseState mouseState(GLFWwindow* window)
-{
-    MouseState state;
-    glfwGetCursorPos(window, &state.x, &state.y);
-    int buttonState = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT);
-    state.mouseDown = buttonState == GLFW_PRESS;
-    return state;
-}

@@ -2,6 +2,7 @@
 #define WINDOW_H
 
 #include <glm/glm.hpp>
+#include <GLFW/glfw3.h>
 
 bool windowSizeChangeHandled = false;
 glm::ivec2 windowSize;

@@ -240,8 +240,12 @@ void flush()
                 glBufferData(GL_ARRAY_BUFFER, positions.size()*sizeof(glm::vec2), &positions[0], GL_DYNAMIC_DRAW);
                 
                 auto& texCoords = subLayer.texCoords[material.name];
-                glBindBuffer(GL_ARRAY_BUFFER, material.renderData.texVBO);
-                glBufferData(GL_ARRAY_BUFFER, texCoords.size()*sizeof(glm::vec2), &texCoords[0], GL_DYNAMIC_DRAW);
+
+                if (texCoords.size() > 0)
+                {
+                    glBindBuffer(GL_ARRAY_BUFFER, material.renderData.texVBO);
+                    glBufferData(GL_ARRAY_BUFFER, texCoords.size()*sizeof(glm::vec2), &texCoords[0], GL_DYNAMIC_DRAW);
+                }
                 
                 glDrawArrays(material.renderData.drawMode, 0, positions.size());
             }

@@ -20,6 +20,11 @@ namespace Imgui {
         }
     };
 
+    Pos operator-(const Pos& lhs, const Pos& rhs)
+    {
+        return Pos{lhs.x - rhs.x, lhs.y - rhs.y};
+    }
+
     Pos operator+(const Pos& lhs, const Pos& rhs)
     {
         return {lhs.x + rhs.x, lhs.y + rhs.y};
@@ -98,11 +103,9 @@ namespace Imgui {
     };
 
     struct Context {
-        int mouseX;
-        int mouseY;
+        Pos mousePos;
         bool mouseDown;
-        int previousMouseX;
-        int previousMouseY;
+        Pos prevMousePos;
         std::string activeElement;
         unsigned int shaderId;
         RenderData renderData;
@@ -112,6 +115,8 @@ namespace Imgui {
         Theme theme = grey;
         int zOrder = 0;
         Render::Camera* camera = nullptr;
+        GLFWcursorposfun prevCursorposCallback = nullptr;
+        GLFWmousebuttonfun prevMousebuttonCallback = nullptr;
     };
     Context context;
 
@@ -132,11 +137,8 @@ namespace Imgui {
         return inBetween(pos.x, region.x, region.x + region.width) && inBetween(pos.y, region.y, region.y + region.height);
     }
 
-    void begin(unsigned int shaderId, RenderData renderData, int mouseX, int mouseY, bool mouseDown, Render::Camera* camera)
+    void begin(unsigned int shaderId, RenderData renderData, Render::Camera* camera)
     {
-        context.mouseX = mouseX;
-        context.mouseY = mouseY;
-        context.mouseDown = mouseDown;
         context.shaderId = shaderId;
         context.renderData = renderData;
         context.zOrder = 0;
@@ -152,8 +154,7 @@ namespace Imgui {
         {
             context.activeElement = "";
         }
-        context.previousMouseX = context.mouseX;
-        context.previousMouseY = context.mouseY;
+        context.prevMousePos = context.mousePos;
         Render::flush();
     }
 
@@ -174,7 +175,7 @@ namespace Imgui {
 
         if (context.activeElement == name)
         {
-            panel.pos += Pos{ context.mouseX - context.previousMouseX, context.mouseY - context.previousMouseY };
+            panel.pos += context.mousePos - context.prevMousePos;
         }
     }
 
@@ -200,7 +201,7 @@ namespace Imgui {
 
         context.currentPanel = "";
 
-        bool underMouse = inRegion({context.mouseX, context.mouseY}, {x, y, width, height});
+        bool underMouse = inRegion(context.mousePos, {x, y, width, height});
         if (context.activeElement == "" && underMouse && context.mouseDown)
         {
             context.activeElement = panel.name;
@@ -219,12 +220,11 @@ namespace Imgui {
 
     bool button(const std::string& name, int width, int height)
     {
-        auto mouseX = context.mouseX;
-        auto mouseY = context.mouseY;
+        auto mousePos = context.mousePos;
 
         auto [x, y] = claimSpot(width, height);
 
-        bool underMouse = inRegion({mouseX, mouseY}, {x, y, width, height});
+        bool underMouse = inRegion(mousePos, {x, y, width, height});
         if (underMouse && context.mouseDown && context.activeElement == "")
         {
             context.activeElement = name;
@@ -249,5 +249,29 @@ namespace Imgui {
         Render::queue({ {x, y}, {x + width, y}, {x + width, y + height}, {x + width, y + height}, {x, y + height}, {x, y} });
 
         return context.activeElement == name && underMouse && !context.mouseDown;
+    }
+
+    void cursorPosCallback(GLFWwindow* window, double xpos, double ypos)
+    {
+        context.mousePos = Pos{ static_cast<int>(xpos), static_cast<int>(ypos)};
+        if (context.prevCursorposCallback)
+        {
+            context.prevCursorposCallback(window, xpos, ypos);
+        }
+    }
+
+    void mousebuttonCallback(GLFWwindow* window, int button, int action, int mods)
+    {
+        context.mouseDown = button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS;
+        if (context.prevMousebuttonCallback)
+        {
+            context.prevMousebuttonCallback(window, button, action, mods);
+        }
+    }
+
+    void installCallbacks(GLFWwindow* window)
+    {
+        context.prevCursorposCallback = glfwSetCursorPosCallback(window, cursorPosCallback);
+        context.prevMousebuttonCallback = glfwSetMouseButtonCallback(window, mousebuttonCallback);
     }
 }

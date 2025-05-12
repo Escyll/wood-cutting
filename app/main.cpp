@@ -105,6 +105,8 @@ int main(int argc, char *argv[])
     AnimationSystem animationSystem { animationCatalog };
     
     loadLevel(registry);
+
+    Imgui::installCallbacks(window);
     
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -143,37 +145,35 @@ int main(int argc, char *argv[])
         //tileEditingSystem.run(registry, timeDelta);
         //dialogSystem.run(registry, timeDelta);
 
-        //auto [mouseX, mouseY, mousePressed] = mouseState(window);
+        Imgui::begin(unlitColorShader, shapeRenderData, &uiCamera);
+        Imgui::panelBegin("MyPanel", 10, 10, {Imgui::LayoutStyle::Column});
 
-        //Imgui::begin(unlitColorShader, shapeRenderData, mouseX, mouseY, mousePressed, &uiCamera);
-        //Imgui::panelBegin("MyPanel", 10, 10, {Imgui::LayoutStyle::Column});
+        if (Imgui::button("MyButton 1", 200, 100))
+        {
+            std::cerr << "Button press of MyButton 1 detected" << std::endl;
+        }
 
-        //if (Imgui::button("MyButton 1", 200, 100))
-        //{
-        //    std::cerr << "Button press of MyButton 1 detected" << std::endl;
-        //}
+        if (Imgui::button("MyButton 2", 150, 100))
+        {
+            std::cerr << "Button press of MyButton 2 detected" << std::endl;
+        }
 
-        //if (Imgui::button("MyButton 2", 150, 100))
-        //{
-        //    std::cerr << "Button press of MyButton 2 detected" << std::endl;
-        //}
+        Imgui::panelEnd();
 
-        //Imgui::panelEnd();
+        Imgui::panelBegin("MyPanel 2", 1000, 10, {Imgui::LayoutStyle::Row});
 
-        //Imgui::panelBegin("MyPanel 2", 1000, 10, {Imgui::LayoutStyle::Row});
+        if (Imgui::button("MyButton 3", 200, 80))
+        {
+            std::cerr << "Button press of MyButton 3 detected" << std::endl;
+        }
 
-        //if (Imgui::button("MyButton 3", 200, 80))
-        //{
-        //    std::cerr << "Button press of MyButton 3 detected" << std::endl;
-        //}
+        if (Imgui::button("MyButton 4", 200, 100))
+        {
+            std::cerr << "Button press of MyButton 4 detected" << std::endl;
+        }
 
-        //if (Imgui::button("MyButton 4", 200, 100))
-        //{
-        //    std::cerr << "Button press of MyButton 4 detected" << std::endl;
-        //}
-
-        //Imgui::panelEnd();
-        //Imgui::end();
+        Imgui::panelEnd();
+        Imgui::end();
 
         glfwSwapBuffers(window);
     }
