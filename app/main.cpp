@@ -121,7 +121,6 @@ int main(int argc, char *argv[])
         auto timeDelta = currentFrame - previousFrame;
         previousFrame = currentFrame;
         processInput(window);
-        markKeyStatesHold();
 
         if (not windowSizeChangeHandled)
         {
@@ -132,18 +131,20 @@ int main(int argc, char *argv[])
 
         movementSystem.run(registry, timeDelta);
 
-        //woodGatheringSystem.run(registry, timeDelta);
-        //clayGatheringSystem.run(registry, timeDelta);
-        //glazeGatheringSystem.run(registry, timeDelta);
-        //missionSystem.run(registry, timeDelta);
+        woodGatheringSystem.run(registry, timeDelta);
+        clayGatheringSystem.run(registry, timeDelta);
+        glazeGatheringSystem.run(registry, timeDelta);
+        missionSystem.run(registry, timeDelta);
         animationSystem.run(registry, timeDelta);
 
         glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         tileSystem.run(registry, timeDelta);
-        //tileEditingSystem.run(registry, timeDelta);
-        //dialogSystem.run(registry, timeDelta);
+        tileEditingSystem.run(registry, timeDelta);
+        dialogSystem.run(registry, timeDelta);
+
+        markKeyStatesHold();
 
         Imgui::begin(unlitColorShader, shapeRenderData, &uiCamera);
         Imgui::panelBegin("MyPanel", 10, 10, {Imgui::LayoutStyle::Column});
