@@ -174,6 +174,42 @@ void setCamera(Camera* camera)
     renderContext.activeCamera = camera;
 }
 
+Framebuffer createFramebuffer(const glm::ivec2& pixelSize)
+{
+    Framebuffer framebuffer;
+    framebuffer.pixelSize = pixelSize;
+    
+    glGenFramebuffers(1, &framebuffer.fbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer.fbo);
+
+    glGenTextures(1, &framebuffer.fboTexture);
+    glBindTexture(GL_TEXTURE_2D, framebuffer.fboTexture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, pixelSize.x, pixelSize.y, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, framebuffer.fboTexture, 0);
+
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+    {
+        std::cerr << "Framebuffer not comple" << std::endl;
+    }
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    return framebuffer;
+}    
+
+void setFramebuffer(const Framebuffer& framebuffer)
+{
+    renderContext.activeFramebuffer = framebuffer;
+}
+
+void unsetFramebuffer()
+{
+    renderContext.activeFramebuffer = { 0 };
+}
+
 void queue(const std::vector<glm::vec2>& newPositions)
 {
     auto& subLayer = renderContext.layers[renderContext.activeLayer].subLayers[renderContext.activeSubLayer];

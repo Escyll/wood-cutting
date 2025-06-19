@@ -75,6 +75,8 @@ int main(int argc, char *argv[])
     RenderData shapeRenderData { tileLineVAO, tileBuffer.handle, 0, GL_TRIANGLES };
 
     Render::Camera sceneCamera { glm::vec3(0.f), Render::createProjection({640, 360}, 80, -100, 100), {640, 360} };
+    auto downScaledFramebuffer = Render::createFramebuffer({640, 360});
+
     Render::Camera uiCamera { glm::vec3(0.f), glm::ortho(0.f, 1920.f, 1080.f, 0.f) };
 
     GameState gameState;
