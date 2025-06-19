@@ -61,6 +61,13 @@ struct Layer
     std::map<float, SubLayer> subLayers;
 };
 
+struct Framebuffer
+{
+    unsigned int fbo;
+    unsigned int fboTexture;
+    glm::ivec2 pixelSize;
+};
+
 struct RenderContext
 {
     std::map<int, Layer> layers;
@@ -68,12 +75,16 @@ struct RenderContext
     float activeSubLayer = 0;
     Material activeMaterial = {};
     Camera* activeCamera = nullptr;
+    Framebuffer activeFramebuffer = {};
 };
 
 void setLayer(int layer);
 void setSubLayer(float subLayer);
 void setMaterial(const Material& material);
 void setCamera(Camera* camera);
+Framebuffer createFramebuffer(const glm::ivec2& resolution);
+void setFramebuffer(const Framebuffer& framebuffer);
+void unsetFramebuffer();
 void queue(const std::vector<glm::vec2>& newPositions);
 void queue(const std::vector<glm::vec2>& newPositions, const std::vector<glm::vec2>& newTexCoords);
 void printGLDebug(const std::string& message);
