@@ -16,6 +16,25 @@
 #include "FontRendering/BMFont.h"
 #include "Imgui/Imgui.h"
 
+void createFBO(unsigned int &fbo, unsigned int &fboBuffer) {
+    glGenFramebuffers(1, &fbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+
+    glGenTextures(1, &fboTexture);
+    glBindTexture(GL_TEXTURE_2D, fboTexture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fboTexture, 0);
+
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        std::cerr << "Framebuffer not complete!\n";
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
 int main(int argc, char *argv[])
 {
     glfwWindowHint(GLFW_SAMPLES, 4);
@@ -55,7 +74,7 @@ int main(int argc, char *argv[])
     RenderData tileLineRenderData { tileLineVAO, tileBuffer.handle, 0, GL_LINES };
     RenderData shapeRenderData { tileLineVAO, tileBuffer.handle, 0, GL_TRIANGLES };
 
-    Render::Camera sceneCamera { glm::vec3(0.f), Render::createProjection({1920, 1080}, 80, -100, 100) };
+    Render::Camera sceneCamera { glm::vec3(0.f), Render::createProjection({640, 360}, 80, -100, 100), {640, 360} };
     Render::Camera uiCamera { glm::vec3(0.f), glm::ortho(0.f, 1920.f, 1080.f, 0.f) };
 
     GameState gameState;
@@ -114,6 +133,10 @@ int main(int argc, char *argv[])
 
     glfwSwapInterval(0);
     auto previousFrame = 0.f;
+    
+    unsigned int fbo, fboTexture;
+    createFBO(fbo, fboTexture);
+
     while (!glfwWindowShouldClose(window))
     {
         glfwPollEvents();
@@ -124,19 +147,20 @@ int main(int argc, char *argv[])
 
         if (not windowSizeChangeHandled)
         {
-            sceneCamera.projection = Render::createProjection({windowSize.x, windowSize.y}, 40, -100, 100);
+            sceneCamera.projection = Render::createProjection({640, 360}, 40, -100, 100);
             uiCamera.projection = glm::ortho(0.f, (float) windowSize.x, (float) windowSize.y, 0.f);
             windowSizeChangeHandled = true;
         }
 
+        // Game systems
         movementSystem.run(registry, timeDelta);
-
         woodGatheringSystem.run(registry, timeDelta);
         clayGatheringSystem.run(registry, timeDelta);
         glazeGatheringSystem.run(registry, timeDelta);
         missionSystem.run(registry, timeDelta);
         animationSystem.run(registry, timeDelta);
 
+        // Render systems
         glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -146,7 +170,7 @@ int main(int argc, char *argv[])
 
         markKeyStatesHold();
 
-        Imgui::begin(unlitColorShader, shapeRenderData, &uiCamera);
+        Imgui::begin(unlitColorShader, unlitTextureShader, tileRenderData, &uiCamera);
         Imgui::panelBegin("MyPanel", 10, 10, {Imgui::LayoutStyle::Column});
 
         if (Imgui::button("MyButton 1", 200, 100))
@@ -158,6 +182,43 @@ int main(int argc, char *argv[])
         {
             std::cerr << "Button press of MyButton 2 detected" << std::endl;
         }
+
+        int tileSize = 50;
+        int id = 0;
+        auto texture = getTexture(textureCatalog, "Cute_Fantasy_Free/Tiles/Path_Tile.png");
+
+        Imgui::beginLayout({Imgui::LayoutStyle::Row});
+        std::vector<Frame> frames = {
+            getAnimation(animationCatalog, "Cute_Fantasy_Free/Tiles/grass_path_NW_SE").frames[0],
+            getAnimation(animationCatalog, "Cute_Fantasy_Free/Tiles/grass_path_N_S").frames[0],
+            getAnimation(animationCatalog, "Cute_Fantasy_Free/Tiles/grass_path_NE_SW").frames[0],
+            getAnimation(animationCatalog, "Cute_Fantasy_Free/Tiles/path_dirt1").frames[0]
+        };
+        for (auto& frame : frames)
+        {
+            std::string name = "MyImageButton " + std::to_string(id++);
+            if (Imgui::imageButton(name, texture, frame, tileSize, tileSize))
+            {
+                std::cerr << "Button press of " << name << " detected" << std::endl;
+            }
+        }
+        Imgui::endLayout();
+
+        Imgui::beginLayout({Imgui::LayoutStyle::Row});
+        frames = {
+            getAnimation(animationCatalog, "Cute_Fantasy_Free/Tiles/grass_path_SW_NE").frames[0],
+            getAnimation(animationCatalog, "Cute_Fantasy_Free/Tiles/grass_path_S_N").frames[0],
+            getAnimation(animationCatalog, "Cute_Fantasy_Free/Tiles/grass_path_SE_NW").frames[0]
+        };
+        for (auto& frame : frames)
+        {
+            std::string name = "MyImageButton " + std::to_string(id++);
+            if (Imgui::imageButton(name, texture, frame, tileSize, tileSize))
+            {
+                std::cerr << "Button press of " << name << " detected" << std::endl;
+            }
+        }
+        Imgui::endLayout();
 
         Imgui::panelEnd();
 

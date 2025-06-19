@@ -7,3 +7,4 @@
 CMakeLists.txt.user
 *.kdev4
 build.log
+tags

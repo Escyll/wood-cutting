@@ -3,7 +3,7 @@
 #include <iostream>
 #include <string>
 #include <unordered_map>
-#include <queue>
+#include <deque>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -108,9 +108,10 @@ namespace Imgui {
         Pos prevMousePos;
         std::string activeElement;
         unsigned int shaderId;
+        unsigned int textureShaderId;
         RenderData renderData;
         std::unordered_map<std::string, Panel> panels;
-        std::queue<Layout> layoutStack;
+        std::deque<Layout> layoutStack;
         std::string currentPanel;
         Theme theme = grey;
         int zOrder = 0;
@@ -137,9 +138,10 @@ namespace Imgui {
         return inBetween(pos.x, region.x, region.x + region.width) && inBetween(pos.y, region.y, region.y + region.height);
     }
 
-    void begin(unsigned int shaderId, RenderData renderData, Render::Camera* camera)
+    void begin(unsigned int shaderId, unsigned int textureShaderId, RenderData renderData, Render::Camera* camera)
     {
         context.shaderId = shaderId;
+        context.textureShaderId = textureShaderId;
         context.renderData = renderData;
         context.zOrder = 0;
         context.camera = camera;
@@ -169,7 +171,7 @@ namespace Imgui {
         Panel& panel = context.panels[name];
         Layout layout{layoutStyle};
         layout.orig = panel.pos + Pos{ panel.padding, panel.padding + panel.headerHeight };
-        context.layoutStack.push(layout);
+        context.layoutStack.push_back(layout);
 
         Render::setLayer(++context.zOrder);
 
@@ -182,8 +184,8 @@ namespace Imgui {
     void panelEnd()
     {
         Panel& panel = context.panels[context.currentPanel];
-        auto layout = context.layoutStack.front();
-        context.layoutStack.pop();
+        auto layout = context.layoutStack.back();
+        context.layoutStack.pop_back();
         int x = panel.pos.x;
         int y = panel.pos.y;
         int width = 2*panel.padding + layout.width;
@@ -210,12 +212,51 @@ namespace Imgui {
 
     Pos claimSpot(int width, int height)
     {
-        Layout& layout = context.layoutStack.front();
+        Layout& layout = context.layoutStack.back();
         Pos result =  { layout.orig.x + layout.offset.x, layout.orig.y + layout.offset.y };
         layout.width = layout.style.type == LayoutStyle::Row ? layout.offset.x + width : std::max(width, layout.width);
         layout.height = layout.style.type == LayoutStyle::Column ? layout.offset.y + height : std::max(height, layout.height);
         layout.offset += layout.style.type == LayoutStyle::Row ? Pos{ width + layout.style.spacing, 0 } : Pos{ 0, height + layout.style.spacing };
         return result;
+    }
+
+    void beginLayout(const LayoutStyle& layoutStyle)
+    {
+        Layout& parentLayout = context.layoutStack.back();
+        Layout newLayout{layoutStyle};
+        newLayout.orig = parentLayout.orig + parentLayout.offset;
+        context.layoutStack.push_back(newLayout);
+    }
+
+    void endLayout()
+    {
+        Layout currentLayout = context.layoutStack.back();
+        context.layoutStack.pop_back();
+        claimSpot(currentLayout.width, currentLayout.height);
+    }
+
+    std::vector<glm::vec2> generateTriangulation(const glm::vec2& bottomLeft, const glm::vec2& size)
+    {
+        return {
+            { bottomLeft },
+            { bottomLeft + glm::vec2{ size.x, 0 } },
+            { bottomLeft + glm::vec2{ size.x, size.y } },
+            { bottomLeft + glm::vec2{ size.x, size.y } },
+            { bottomLeft + glm::vec2{ 0, size.y } },
+            { bottomLeft }
+        };
+    }
+
+    std::vector<glm::vec2> generateTriangulationUVs(const glm::vec2& bottomLeft, const glm::vec2& size)
+    {
+        return {
+            { bottomLeft + glm::vec2{ 0, size.y } },
+            { bottomLeft + size },
+            { bottomLeft + glm::vec2{ size.x, 0 } },
+            { bottomLeft + glm::vec2{ size.x, 0 } },
+            { bottomLeft },
+            { bottomLeft + glm::vec2{ 0, size.y } }
+        };
     }
 
     bool button(const std::string& name, int width, int height)
@@ -246,7 +287,35 @@ namespace Imgui {
         material.uniform4fs["color"] = color;
         Render::setSubLayer(1);
         Render::setMaterial(material);
-        Render::queue({ {x, y}, {x + width, y}, {x + width, y + height}, {x + width, y + height}, {x, y + height}, {x, y} });
+        auto positions = generateTriangulation({x, y}, {width, height});
+        Render::queue(positions);
+
+        return context.activeElement == name && underMouse && !context.mouseDown;
+    }
+
+    bool imageButton(const std::string& name, unsigned int image, const Frame& frame, int width, int height)
+    {
+        auto mousePos = context.mousePos;
+
+        auto [x, y] = claimSpot(width, height);
+
+        bool underMouse = inRegion(mousePos, {x, y, width, height});
+        if (underMouse && context.mouseDown && context.activeElement == "")
+        {
+            context.activeElement = name;
+        }
+        
+        Render::Material material;
+        material.name = name;
+        material.shader = context.textureShaderId;
+        material.renderData = context.renderData;
+        material.texture = image;
+        Render::setSubLayer(1);
+        Render::setMaterial(material);
+
+        auto positions = generateTriangulation({x, y}, {width, height});
+        auto texCoords = generateTriangulationUVs(frame.textureRegion.bottomLeft, frame.textureRegion.size);
+        Render::queue(positions, texCoords);
 
         return context.activeElement == name && underMouse && !context.mouseDown;
     }
